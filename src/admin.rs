@@ -5,7 +5,7 @@ use crate::{
         ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
     },
     only_privileged,
-    storage::{self, Compensation, PenaltyType},
+    storage::{self, PenaltyType},
 };
 
 multiversx_sc::imports!();
@@ -32,17 +32,6 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         );
 
         let mut bond = self.address_bonds(&address, &token_identifier, nonce).get();
-
-        if self.compensations(&token_identifier, nonce).is_empty() {
-            let compensation = Compensation {
-                token_identifier: token_identifier.clone(),
-                nonce,
-                total_compenstation_amount: BigUint::from(0u64),
-            };
-
-            self.compensations(&token_identifier, nonce)
-                .set(compensation);
-        }
 
         let penalty = match penalty {
             PenaltyType::Minimum => self.minimum_penalty().get(),
