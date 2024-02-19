@@ -37,14 +37,14 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         self.accepted_token().set(token_identifier);
     }
 
-    // days and amount needed to be bounded
+    // lock period (in days) and bond amount
     #[endpoint(setLockPeriodsAndBonds)]
     fn set_lock_periods_and_bonds(&self, args: MultiValueEncoded<MultiValue2<u16, BigUint>>) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         for input in args.into_iter() {
             let (lock_period, bond) = input.into_tuple();
-            self.lock_periods().insert(lock_period); // same index
-            self.bonds().insert(bond); // same index
+            self.lock_periods().insert(lock_period.clone());
+            self.lock_period_bond_amount(lock_period).set(bond);
         }
     }
 
