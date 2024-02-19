@@ -1,5 +1,7 @@
 #![no_std]
 
+use config::State;
+
 use crate::{
     errors::{
         ERR_CONTRACT_INACTIVE, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_AMOUNT_SENT,
@@ -23,10 +25,17 @@ pub trait LifeBondingContract:
     storage::StorageModule + views::ViewsModule + admin::AdminModule + config::ConfigModule
 {
     #[init]
-    fn init(&self) {}
+    fn init(&self) {
+        self.contract_state().set(State::Inactive);
+        self.minimum_penalty().set(500);
+        self.maximum_penalty().set(10_000);
+        self.withdraw_penalty().set(8_000);
+    }
 
     #[upgrade]
-    fn upgrade(&self) {}
+    fn upgrade(&self) {
+        self.contract_state().set(State::Inactive);
+    }
 
     #[payable("*")]
     #[endpoint(bond)]
