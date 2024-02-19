@@ -1,5 +1,1 @@
-multiversx_sc::imports!();
-multiversx_sc::derive_imports!();
-
-#[multiversx_sc::module]
-pub trait StorageModule {}
+pub const ERR_NOT_PRIVILEGED: &str = "ERR_NOT_PRIVILEGED";
