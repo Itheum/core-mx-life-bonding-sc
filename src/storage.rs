@@ -9,7 +9,7 @@ pub trait StorageModule {
 
     #[view(getLockPeriods)]
     #[storage_mapper("lock_periods")]
-    fn lock_periods(&self) -> SetMapper<u8>; // list of lock periods in days
+    fn lock_periods(&self) -> SetMapper<u16>; // list of lock periods in days
 
     #[view(getBonds)]
     #[storage_mapper("minimum_bond")]
