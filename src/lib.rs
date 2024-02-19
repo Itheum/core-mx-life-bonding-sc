@@ -3,6 +3,7 @@
 use config::State;
 
 use crate::{
+    config::SECONDS_IN_DAY,
     errors::{
         ERR_BOND_NOT_FOUND, ERR_CONTRACT_INACTIVE, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC,
         ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD, ERR_INVALID_TOKEN_IDENTIFIER,
@@ -140,5 +141,45 @@ pub trait LifeBondingContract:
             self.send()
                 .direct_esdt(&caller, &self.bond_token().get(), 0u64, &bond.bond_amount);
         }
+    }
+
+    #[endpoint(renew)]
+    fn renew(
+        &self,
+        token_identifier: TokenIdentifier,
+        nonce: u64,
+        new_lock_period: OptionalValue<u16>,
+    ) {
+        only_active!(self, ERR_CONTRACT_INACTIVE);
+        let caller = self.blockchain().get_caller();
+        require!(
+            !self
+                .address_bonds(&caller, &token_identifier, nonce)
+                .is_empty(),
+            ERR_BOND_NOT_FOUND
+        );
+        let mut bond = self.address_bonds(&caller, &token_identifier, nonce).get();
+        let current_timestamp = self.blockchain().get_block_timestamp();
+
+        let new_lock_period = match new_lock_period.into_option() {
+            Some(value) => value,     // new value
+            None => bond.lock_period, // old value
+        };
+
+        if bond.unbound_timestamp > current_timestamp {
+            let remaining_time = bond.unbound_timestamp - current_timestamp;
+            let remaining_lock_period = remaining_time / SECONDS_IN_DAY;
+            bond.unbound_timestamp =
+                current_timestamp + self.trasform_days_in_seconds(new_lock_period);
+            bond.lock_period = new_lock_period + remaining_lock_period as u16;
+        } else {
+            bond.unbound_timestamp =
+                current_timestamp + self.trasform_days_in_seconds(new_lock_period);
+            bond.lock_period = new_lock_period;
+            bond.bond_timestamp = current_timestamp;
+        }
+
+        self.address_bonds(&caller, &token_identifier, nonce)
+            .set(bond);
     }
 }
