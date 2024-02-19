@@ -24,3 +24,4 @@ deploy-mainnet.interaction.json
 
 node_modules/
 
+.vscode

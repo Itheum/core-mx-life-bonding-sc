@@ -2,8 +2,8 @@
 
 use crate::{
     errors::{
-        ERR_CONTRACT_INACTIVE, ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD,
-        ERR_INVALID_TOKEN_IDENTIFIER,
+        ERR_CONTRACT_INACTIVE, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_AMOUNT_SENT,
+        ERR_INVALID_LOCK_PERIOD, ERR_INVALID_TOKEN_IDENTIFIER,
     },
     storage::Bond,
 };
@@ -38,12 +38,19 @@ pub trait LifeBondingContract:
         lock_period: u16, //days
     ) {
         only_active!(self, ERR_CONTRACT_INACTIVE);
+        require!(
+            self.blockchain()
+                .is_smart_contract(&self.blockchain().get_caller()),
+            ERR_ENDPOINT_CALLABLE_ONLY_BY_SC
+        );
         let payment = self.call_value().single_esdt();
 
         require!(
             payment.token_identifier == self.bond_token().get(),
             ERR_INVALID_TOKEN_IDENTIFIER
         );
+
+        // [TO DO] check token_identifier is accepted (not really needed as this endpoint will be called by the minting contract)
 
         require!(
             self.lock_periods().contains(&lock_period),

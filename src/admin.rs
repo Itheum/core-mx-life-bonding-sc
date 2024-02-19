@@ -1,6 +1,9 @@
 use crate::{
     config::State,
-    errors::{ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED},
+    errors::{
+        ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TOKEN_IDENTIFIER,
+        ERR_NOT_PRIVILEGED,
+    },
     only_privileged, storage,
 };
 
@@ -19,6 +22,18 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
     fn set_contract_state_inactive(&self) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         self.contract_state().set(State::Inactive);
+    }
+
+    #[endpoint(setAcceptedCallers)]
+    fn set_accepted_callers(&self, callers: MultiValueEncoded<ManagedAddress>) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+        for caller in callers.into_iter() {
+            require!(
+                self.blockchain().is_smart_contract(&caller),
+                ERR_ENDPOINT_CALLABLE_ONLY_BY_SC
+            );
+            self.accepted_callers().insert(caller);
+        }
     }
 
     #[endpoint(setBondToken)]

@@ -20,6 +20,10 @@ pub trait StorageModule {
     #[storage_mapper("accepted_token")]
     fn accepted_token(&self) -> SingleValueMapper<TokenIdentifier>; // accepted SFT // [TO DO] read token identifier from minting contract
 
+    #[view(getAcceptedCallers)]
+    #[storage_mapper("accepted_callers")]
+    fn accepted_callers(&self) -> UnorderedSetMapper<ManagedAddress>;
+
     #[view(getBondToken)]
     #[storage_mapper("bond_token")]
     fn bond_token(&self) -> SingleValueMapper<TokenIdentifier>; // bonding token
