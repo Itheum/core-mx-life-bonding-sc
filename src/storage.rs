@@ -2,6 +2,15 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 #[derive(
+    TopEncode, TopDecode, NestedEncode, NestedDecode, TypeAbi, Clone, PartialEq, Eq, Debug, Copy,
+)]
+pub enum PenaltyType {
+    Minimum,
+    Custom,
+    Maximum,
+}
+
+#[derive(
     TopEncode, TopDecode, NestedEncode, NestedDecode, TypeAbi, Clone, PartialEq, Eq, Debug,
 )]
 pub struct Bond<M: ManagedTypeApi> {
@@ -12,6 +21,15 @@ pub struct Bond<M: ManagedTypeApi> {
     pub bond_timestamp: u64,
     pub unbound_timestamp: u64,
     pub bond_amount: BigUint<M>,
+}
+
+#[derive(
+    TopEncode, TopDecode, NestedEncode, NestedDecode, TypeAbi, Clone, PartialEq, Eq, Debug,
+)]
+pub struct Compensation<M: ManagedTypeApi> {
+    pub token_identifier: TokenIdentifier<M>,
+    pub nonce: u64,
+    pub total_compenstation_amount: BigUint<M>,
 }
 
 #[multiversx_sc::module]
@@ -50,9 +68,22 @@ pub trait StorageModule {
 
     #[view(getAddressBonds)]
     #[storage_mapper("address_bonds")]
-    fn address_bonds(&self, address: &ManagedAddress) -> UnorderedSetMapper<Bond<Self::Api>>;
+    fn address_bonds(
+        &self,
+        address: &ManagedAddress,
+        token_identifier: &TokenIdentifier,
+        nonce: u64,
+    ) -> SingleValueMapper<Bond<Self::Api>>;
 
     #[view(getBonds)]
     #[storage_mapper("bonds")]
     fn bonds(&self) -> UnorderedSetMapper<Bond<Self::Api>>;
+
+    #[view(getCompensations)]
+    #[storage_mapper("compensations")]
+    fn compensations(
+        &self,
+        token_identifier: &TokenIdentifier,
+        nonce: u64,
+    ) -> SingleValueMapper<Compensation<Self::Api>>;
 }

@@ -1,10 +1,11 @@
 use crate::{
     config::State,
     errors::{
-        ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TOKEN_IDENTIFIER,
-        ERR_NOT_PRIVILEGED,
+        ERR_BOND_NOT_FOUND, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_PENALTY_VALUE,
+        ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
     },
-    only_privileged, storage,
+    only_privileged,
+    storage::{self, Compensation, PenaltyType},
 };
 
 multiversx_sc::imports!();
@@ -12,6 +13,68 @@ multiversx_sc::derive_imports!();
 
 #[multiversx_sc::module]
 pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
+    #[endpoint(sanction)]
+    fn sanction(
+        &self,
+        address: ManagedAddress,
+        token_identifier: TokenIdentifier,
+        nonce: u64,
+        penalty: PenaltyType,
+        custom_penalty: OptionalValue<u64>,
+    ) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+
+        require!(
+            !self
+                .address_bonds(&address, &token_identifier, nonce)
+                .is_empty(),
+            ERR_BOND_NOT_FOUND
+        );
+
+        let mut bond = self.address_bonds(&address, &token_identifier, nonce).get();
+
+        if self.compensations(&token_identifier, nonce).is_empty() {
+            let compensation = Compensation {
+                token_identifier: token_identifier.clone(),
+                nonce,
+                total_compenstation_amount: BigUint::from(0u64),
+            };
+
+            self.compensations(&token_identifier, nonce)
+                .set(compensation);
+        }
+
+        let penalty = match penalty {
+            PenaltyType::Minimum => self.minimum_penalty().get(),
+            PenaltyType::Custom => {
+                if let Some(custom_value) = custom_penalty.into_option() {
+                    require!(
+                        custom_value <= 10_000 && custom_value > 0,
+                        ERR_INVALID_PENALTY_VALUE
+                    );
+                    custom_value
+                } else {
+                    sc_panic!(ERR_INVALID_PENALTY_VALUE);
+                }
+            }
+            PenaltyType::Maximum => self.maximum_penalty().get(),
+        };
+
+        let penalty_amount =
+            &bond.bond_amount * &BigUint::from(penalty) / &BigUint::from(10_000u64);
+
+        bond.bond_amount = &bond.bond_amount - &penalty_amount;
+
+        self.address_bonds(&address, &token_identifier, nonce)
+            .set(bond);
+
+        let mut compensation = self.compensations(&token_identifier, nonce).get();
+        compensation.total_compenstation_amount += &penalty_amount; // Update total compensation amount
+
+        self.compensations(&token_identifier, nonce)
+            .set(compensation);
+    }
+
     #[endpoint(setContractStateActive)]
     fn set_contract_state_active(&self) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);

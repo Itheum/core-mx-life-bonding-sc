@@ -66,7 +66,7 @@ pub trait LifeBondingContract:
             ERR_INVALID_LOCK_PERIOD
         );
         require!(
-            self.lock_period_bond_amount(lock_period).is_empty(),
+            !self.lock_period_bond_amount(lock_period).is_empty(),
             ERR_INVALID_LOCK_PERIOD
         ); // check not really needed
 
@@ -79,15 +79,16 @@ pub trait LifeBondingContract:
 
         let bond = Bond {
             address: original_caller.clone(),
-            token_identifier,
-            nonce,
+            token_identifier: token_identifier.clone(),
+            nonce: nonce.clone(),
             lock_period,
             bond_timestamp: current_timestamp,
             unbound_timestamp,
             bond_amount: payment.amount,
         };
 
-        self.address_bonds(&original_caller).insert(bond.clone());
+        self.address_bonds(&original_caller, &token_identifier, nonce)
+            .set(bond.clone());
         self.bonds().insert(bond);
     }
 }
