@@ -11,6 +11,20 @@ pub enum State {
 
 #[multiversx_sc::module]
 pub trait ConfigModule {
+    #[only_owner]
+    #[endpoint(setAdministrator)]
+    fn set_administrator(&self, administrator: ManagedAddress) {
+        self.administrator().set(administrator);
+    }
+
+    #[view(getContractState)]
+    #[storage_mapper("contract_state")]
+    fn contract_state(&self) -> SingleValueMapper<State>;
+
+    #[view(getAdministrator)]
+    #[storage_mapper("administrator")]
+    fn administrator(&self) -> SingleValueMapper<ManagedAddress>;
+
     #[inline]
     fn is_contract_owner(&self, address: &ManagedAddress) -> bool {
         &(self.blockchain().get_owner_address()) == address
@@ -29,12 +43,4 @@ pub trait ConfigModule {
     fn is_state_active(&self, state: State) -> bool {
         state == State::Active
     }
-
-    #[view(getContractState)]
-    #[storage_mapper("contract_state")]
-    fn contract_state(&self) -> SingleValueMapper<State>;
-
-    #[view(getAdministrator)]
-    #[storage_mapper("administrator")]
-    fn administrator(&self) -> SingleValueMapper<ManagedAddress>;
 }
