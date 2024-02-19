@@ -27,8 +27,9 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         self.accepted_token().set(token_identifier);
     }
 
+    // days and amount needed to be bounded
     #[endpoint(setLockPeriodsAndBonds)]
-    fn set_lock_periods_and_bonds(&self, args: MultiValueEncoded<MultiValue2<u64, BigUint>>) {
+    fn set_lock_periods_and_bonds(&self, args: MultiValueEncoded<MultiValue2<u8, BigUint>>) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         for input in args.into_iter() {
             let (lock_period, bond) = input.into_tuple();
