@@ -1,6 +1,6 @@
 use crate::{
     config::State,
-    errors::{ERR_INVALID_PENALTY_VALUE, ERR_NOT_PRIVILEGED},
+    errors::{ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED},
     only_privileged, storage,
 };
 
@@ -19,6 +19,16 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
     fn set_contract_state_inactive(&self) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         self.contract_state().set(State::Inactive);
+    }
+
+    #[endpoint(setBondToken)]
+    fn set_bond_token(&self, token_identifier: TokenIdentifier) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+        require!(
+            token_identifier.is_valid_esdt_identifier(),
+            ERR_INVALID_TOKEN_IDENTIFIER
+        );
+        self.bond_token().set(token_identifier);
     }
 
     #[endpoint(setAcceptedToken)]
