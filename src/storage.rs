@@ -7,13 +7,13 @@ pub trait StorageModule {
     #[storage_mapper("accepted_token")]
     fn accepted_token(&self) -> SingleValueMapper<TokenIdentifier>; // bonding token
 
-    #[view(getMinimumLockPeriod)]
-    #[storage_mapper("minimum_lock_period")]
-    fn minimum_lock_period(&self) -> SingleValueMapper<u64>;
+    #[view(getLockPeriods)]
+    #[storage_mapper("lock_periods")]
+    fn lock_periods(&self) -> SetMapper<u64>; // list of lock periods in seconds
 
-    #[view(getMinimumBond)]
+    #[view(getBonds)]
     #[storage_mapper("minimum_bond")]
-    fn minimum_bond(&self) -> SingleValueMapper<BigUint>;
+    fn bonds(&self) -> SetMapper<BigUint>; // list of bonds amount based on lock period
 
     #[view(getMinimumPenalty)]
     #[storage_mapper("minimum_penalty")]
