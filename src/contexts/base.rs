@@ -42,13 +42,13 @@ where
     fn drop(&mut self) {
         self.sc_ref
             .bond_lock_period(self.bond_id)
-            .set(self.lock_period);
+            .set(&self.lock_period);
         self.sc_ref
             .bond_timestamp(self.bond_id)
-            .set(self.bond_timestamp);
+            .set(&self.bond_timestamp);
         self.sc_ref
             .unbound_timestamp(self.bond_id)
-            .set(self.unbound_timestamp);
-        self.sc_ref.bond_amount(self.bond_id).set(self.bond_amount);
+            .set(&self.unbound_timestamp);
+        self.sc_ref.bond_amount(self.bond_id).set(&self.bond_amount);
     }
 }

@@ -9,7 +9,7 @@ use crate::{
         ERR_BOND_NOT_FOUND, ERR_CONTRACT_INACTIVE, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC,
         ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD, ERR_INVALID_TOKEN_IDENTIFIER,
     },
-    storage::{Bond, Compensation},
+    storage::Compensation,
 };
 
 multiversx_sc::imports!();
@@ -81,20 +81,14 @@ pub trait LifeBondingContract:
         let current_timestamp = self.blockchain().get_block_timestamp();
         let unbound_timestamp = current_timestamp + self.trasform_days_in_seconds(lock_period);
 
-        let bond_id = self.next_bond_id();
+        let bond_id = self
+            .object_to_id()
+            .get_id_or_insert((token_identifier.clone(), nonce));
 
-        let mut bond_cache = BondCache::new(self, bond_id);
-
-        bond_cache.address = original_caller;
-        bond_cache.token_identifier = token_identifier;
-        bond_cache.nonce = nonce;
-        bond_cache.lock_period = lock_period;
-        bond_cache.bond_timestamp = current_timestamp;
-        bond_cache.unbound_timestamp = unbound_timestamp;
-        bond_cache.bond_amount = payment.amount;
-
-        self.address_bonds(&original_caller).insert(bond_id);
-        self.bonds().insert(bond_id);
+        require!(
+            !self.object_to_id().contains_id(bond_id),
+            ERR_BOND_NOT_FOUND
+        );
 
         // create compensation storage on bond if not exists
         if self.compensations(&token_identifier, nonce).is_empty() {
@@ -107,6 +101,19 @@ pub trait LifeBondingContract:
             self.compensations(&token_identifier, nonce)
                 .set(compensation);
         }
+
+        let mut bond_cache = BondCache::new(self, bond_id);
+
+        bond_cache.address = original_caller.clone();
+        bond_cache.token_identifier = token_identifier;
+        bond_cache.nonce = nonce;
+        bond_cache.lock_period = lock_period;
+        bond_cache.bond_timestamp = current_timestamp;
+        bond_cache.unbound_timestamp = unbound_timestamp;
+        bond_cache.bond_amount = payment.amount;
+
+        self.address_bonds(&original_caller).insert(bond_id);
+        self.bonds().insert(bond_id);
     }
 
     #[endpoint(withdraw)]
@@ -114,21 +121,29 @@ pub trait LifeBondingContract:
         only_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();
 
-        // [TO DO] check if bond exists based on token_identifier and nonce
+        let bond_id = self
+            .object_to_id()
+            .get_id((token_identifier.clone(), nonce));
 
-        let bond = self.address_bonds(&caller, &token_identifier, nonce).get();
+        require!(
+            !self.object_to_id().contains_id(bond_id),
+            ERR_BOND_NOT_FOUND
+        );
+
+        let bond_cache = BondCache::new(self, bond_id);
 
         let current_timestamp = self.blockchain().get_block_timestamp();
 
-        if bond.unbound_timestamp >= current_timestamp {
-            let penalty_amount = &bond.bond_amount * &BigUint::from(self.withdraw_penalty().get())
+        if bond_cache.unbound_timestamp >= current_timestamp {
+            let penalty_amount = &bond_cache.bond_amount
+                * &BigUint::from(self.withdraw_penalty().get())
                 / &BigUint::from(10_000u64);
 
             self.send().direct_esdt(
                 &caller,
                 &self.bond_token().get(),
                 0u64,
-                &(&bond.bond_amount - &penalty_amount),
+                &(&bond_cache.bond_amount - &penalty_amount),
             );
 
             let mut compensation = self.compensations(&token_identifier, nonce).get();
@@ -137,8 +152,12 @@ pub trait LifeBondingContract:
             self.compensations(&token_identifier, nonce)
                 .set(compensation);
         } else {
-            self.send()
-                .direct_esdt(&caller, &self.bond_token().get(), 0u64, &bond.bond_amount);
+            self.send().direct_esdt(
+                &caller,
+                &self.bond_token().get(),
+                0u64,
+                &bond_cache.bond_amount,
+            );
         }
     }
 
@@ -151,34 +170,38 @@ pub trait LifeBondingContract:
     ) {
         only_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();
+
+        let bond_id = self
+            .object_to_id()
+            .get_id_or_insert((token_identifier, nonce));
+
         require!(
-            !self
-                .address_bonds(&caller, &token_identifier, nonce)
-                .is_empty(),
+            !self.object_to_id().contains_id(bond_id),
             ERR_BOND_NOT_FOUND
         );
-        let mut bond = self.address_bonds(&caller, &token_identifier, nonce).get();
+
+        let mut bond_cache = BondCache::new(self, bond_id);
+
+        require!(bond_cache.address == caller, ERR_BOND_NOT_FOUND);
+
         let current_timestamp = self.blockchain().get_block_timestamp();
 
         let new_lock_period = match new_lock_period.into_option() {
-            Some(value) => value,     // new value
-            None => bond.lock_period, // old value
+            Some(value) => value,           // new value
+            None => bond_cache.lock_period, // old value
         };
 
-        if bond.unbound_timestamp > current_timestamp {
-            let remaining_time = bond.unbound_timestamp - current_timestamp;
+        if bond_cache.unbound_timestamp > current_timestamp {
+            let remaining_time = bond_cache.unbound_timestamp - current_timestamp;
             let remaining_lock_period = remaining_time / SECONDS_IN_DAY;
-            bond.unbound_timestamp =
+            bond_cache.unbound_timestamp =
                 current_timestamp + self.trasform_days_in_seconds(new_lock_period);
-            bond.lock_period = new_lock_period + remaining_lock_period as u16;
+            bond_cache.lock_period = new_lock_period + remaining_lock_period as u16;
         } else {
-            bond.unbound_timestamp =
+            bond_cache.unbound_timestamp =
                 current_timestamp + self.trasform_days_in_seconds(new_lock_period);
-            bond.lock_period = new_lock_period;
-            bond.bond_timestamp = current_timestamp;
+            bond_cache.lock_period = new_lock_period;
+            bond_cache.bond_timestamp = current_timestamp;
         }
-
-        self.address_bonds(&caller, &token_identifier, nonce)
-            .set(bond);
     }
 }

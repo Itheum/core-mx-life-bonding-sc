@@ -1,3 +1,5 @@
+use crate::contexts::mappers::object_to_id_mapper::ObjectToIdMapper;
+
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
@@ -95,6 +97,9 @@ pub trait StorageModule {
     #[storage_mapper("bond_bond_amount")]
     fn bond_amount(&self, bond_id: u64) -> SingleValueMapper<BigUint>;
 
+    #[storage_mapper("token_identifier_nonce_to_id")]
+    fn object_to_id(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
+
     #[view(getAddressBonds)]
     #[storage_mapper("address_bonds")]
     fn address_bonds(&self, address: &ManagedAddress) -> UnorderedSetMapper<u64>;
@@ -102,14 +107,4 @@ pub trait StorageModule {
     #[view(getBonds)]
     #[storage_mapper("bonds")]
     fn bonds(&self) -> UnorderedSetMapper<u64>;
-
-    fn next_bond_id(&self) -> u64 {
-        let next_bond_id = self.last_bond_id().get() + 1;
-        self.last_bond_id().set(next_bond_id);
-        next_bond_id
-    }
-
-    #[view(getLastBondId)]
-    #[storage_mapper("lastBondId")]
-    fn last_bond_id(&self) -> SingleValueMapper<u64>;
 }

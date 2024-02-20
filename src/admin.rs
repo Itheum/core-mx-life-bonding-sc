@@ -1,5 +1,6 @@
 use crate::{
     config::State,
+    contexts::base::BondCache,
     errors::{
         ERR_BOND_NOT_FOUND, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_PENALTY_VALUE,
         ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
@@ -16,7 +17,6 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
     #[endpoint(sanction)]
     fn sanction(
         &self,
-        address: ManagedAddress,
         token_identifier: TokenIdentifier,
         nonce: u64,
         penalty: PenaltyType,
@@ -24,14 +24,16 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
     ) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
 
+        let bond_id = self
+            .object_to_id()
+            .get_id((token_identifier.clone(), nonce));
+
         require!(
-            !self
-                .address_bonds(&address, &token_identifier, nonce)
-                .is_empty(),
+            !self.object_to_id().contains_id(bond_id),
             ERR_BOND_NOT_FOUND
         );
 
-        let mut bond = self.address_bonds(&address, &token_identifier, nonce).get();
+        let mut bond_cache = BondCache::new(self, bond_id);
 
         let penalty = match penalty {
             PenaltyType::Minimum => self.minimum_penalty().get(),
@@ -50,12 +52,9 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         };
 
         let penalty_amount =
-            &bond.bond_amount * &BigUint::from(penalty) / &BigUint::from(10_000u64);
+            &bond_cache.bond_amount * &BigUint::from(penalty) / &BigUint::from(10_000u64);
 
-        bond.bond_amount = &bond.bond_amount - &penalty_amount;
-
-        self.address_bonds(&address, &token_identifier, nonce)
-            .set(bond);
+        bond_cache.bond_amount = &bond_cache.bond_amount - &penalty_amount;
 
         let mut compensation = self.compensations(&token_identifier, nonce).get();
         compensation.total_compenstation_amount += &penalty_amount; // Update total compensation amount
@@ -65,19 +64,22 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
     }
 
     #[endpoint(modifyBond)]
-    fn modify_bond(&self, address: ManagedAddress, token_identifier: TokenIdentifier, nonce: u64) {
+    fn modify_bond(&self, token_identifier: TokenIdentifier, nonce: u64) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
+
+        let bond_id = self
+            .object_to_id()
+            .get_id_or_insert((token_identifier, nonce));
+
         require!(
-            !self
-                .address_bonds(&address, &token_identifier, nonce)
-                .is_empty(),
+            !self.object_to_id().contains_id(bond_id),
             ERR_BOND_NOT_FOUND
         );
-        let mut bond = self.address_bonds(&address, &token_identifier, nonce).get();
+
+        let mut bond_cache = BondCache::new(self, bond_id);
+
         let current_timestamp = self.blockchain().get_block_timestamp();
-        bond.unbound_timestamp = current_timestamp;
-        self.address_bonds(&address, &token_identifier, nonce)
-            .set(bond);
+        bond_cache.unbound_timestamp = current_timestamp;
     }
 
     #[endpoint(setContractStateActive)]
