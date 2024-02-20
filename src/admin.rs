@@ -64,6 +64,22 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
             .set(compensation);
     }
 
+    #[endpoint(modifyBond)]
+    fn modify_bond(&self, address: ManagedAddress, token_identifier: TokenIdentifier, nonce: u64) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+        require!(
+            !self
+                .address_bonds(&address, &token_identifier, nonce)
+                .is_empty(),
+            ERR_BOND_NOT_FOUND
+        );
+        let mut bond = self.address_bonds(&address, &token_identifier, nonce).get();
+        let current_timestamp = self.blockchain().get_block_timestamp();
+        bond.unbound_timestamp = current_timestamp;
+        self.address_bonds(&address, &token_identifier, nonce)
+            .set(bond);
+    }
+
     #[endpoint(setContractStateActive)]
     fn set_contract_state_active(&self) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
