@@ -66,19 +66,6 @@ pub trait StorageModule {
     #[storage_mapper("withdraw_penalty")]
     fn withdraw_penalty(&self) -> SingleValueMapper<u64>; // percentage
 
-    #[view(getAddressBonds)]
-    #[storage_mapper("address_bonds")]
-    fn address_bonds(
-        &self,
-        address: &ManagedAddress,
-        token_identifier: &TokenIdentifier,
-        nonce: u64,
-    ) -> SingleValueMapper<Bond<Self::Api>>;
-
-    #[view(getBonds)]
-    #[storage_mapper("bonds")]
-    fn bonds(&self) -> UnorderedSetMapper<Bond<Self::Api>>;
-
     #[view(getCompensations)]
     #[storage_mapper("compensations")]
     fn compensations(
@@ -86,4 +73,43 @@ pub trait StorageModule {
         token_identifier: &TokenIdentifier,
         nonce: u64,
     ) -> SingleValueMapper<Compensation<Self::Api>>;
+
+    #[storage_mapper("bond_address")]
+    fn bond_address(&self, bond_id: u64) -> SingleValueMapper<ManagedAddress>;
+
+    #[storage_mapper("bond_token_identifier")]
+    fn bond_token_identifier(&self, bond_id: u64) -> SingleValueMapper<TokenIdentifier>;
+
+    #[storage_mapper("bond_nonce")]
+    fn bond_nonce(&self, bond_id: u64) -> SingleValueMapper<u64>;
+
+    #[storage_mapper("bond_lock_period")]
+    fn bond_lock_period(&self, bond_id: u64) -> SingleValueMapper<u16>;
+
+    #[storage_mapper("bond_bond_timestamp")]
+    fn bond_timestamp(&self, bond_id: u64) -> SingleValueMapper<u64>;
+
+    #[storage_mapper("bond_unbound_timestamp")]
+    fn unbound_timestamp(&self, bond_id: u64) -> SingleValueMapper<u64>;
+
+    #[storage_mapper("bond_bond_amount")]
+    fn bond_amount(&self, bond_id: u64) -> SingleValueMapper<BigUint>;
+
+    #[view(getAddressBonds)]
+    #[storage_mapper("address_bonds")]
+    fn address_bonds(&self, address: &ManagedAddress) -> UnorderedSetMapper<u64>;
+
+    #[view(getBonds)]
+    #[storage_mapper("bonds")]
+    fn bonds(&self) -> UnorderedSetMapper<u64>;
+
+    fn next_bond_id(&self) -> u64 {
+        let next_bond_id = self.last_bond_id().get() + 1;
+        self.last_bond_id().set(next_bond_id);
+        next_bond_id
+    }
+
+    #[view(getLastBondId)]
+    #[storage_mapper("lastBondId")]
+    fn last_bond_id(&self) -> SingleValueMapper<u64>;
 }

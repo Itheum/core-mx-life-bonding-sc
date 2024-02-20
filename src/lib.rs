@@ -4,6 +4,7 @@ use config::State;
 
 use crate::{
     config::SECONDS_IN_DAY,
+    contexts::base::BondCache,
     errors::{
         ERR_BOND_NOT_FOUND, ERR_CONTRACT_INACTIVE, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC,
         ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD, ERR_INVALID_TOKEN_IDENTIFIER,
@@ -16,8 +17,8 @@ multiversx_sc::derive_imports!();
 
 pub mod admin;
 pub mod config;
+pub mod contexts;
 pub mod errors;
-pub mod macros;
 pub mod storage;
 pub mod views;
 
@@ -55,6 +56,8 @@ pub trait LifeBondingContract:
         );
         let payment = self.call_value().single_esdt();
 
+        // [TO DO] check if bond was already created for this token identifier and nonce
+
         require!(
             payment.token_identifier == self.bond_token().get(),
             ERR_INVALID_TOKEN_IDENTIFIER
@@ -78,19 +81,20 @@ pub trait LifeBondingContract:
         let current_timestamp = self.blockchain().get_block_timestamp();
         let unbound_timestamp = current_timestamp + self.trasform_days_in_seconds(lock_period);
 
-        let bond = Bond {
-            address: original_caller.clone(),
-            token_identifier: token_identifier.clone(),
-            nonce: nonce.clone(),
-            lock_period,
-            bond_timestamp: current_timestamp,
-            unbound_timestamp,
-            bond_amount: payment.amount,
-        };
+        let bond_id = self.next_bond_id();
 
-        self.address_bonds(&original_caller, &token_identifier, nonce)
-            .set(bond.clone());
-        self.bonds().insert(bond);
+        let mut bond_cache = BondCache::new(self, bond_id);
+
+        bond_cache.address = original_caller;
+        bond_cache.token_identifier = token_identifier;
+        bond_cache.nonce = nonce;
+        bond_cache.lock_period = lock_period;
+        bond_cache.bond_timestamp = current_timestamp;
+        bond_cache.unbound_timestamp = unbound_timestamp;
+        bond_cache.bond_amount = payment.amount;
+
+        self.address_bonds(&original_caller).insert(bond_id);
+        self.bonds().insert(bond_id);
 
         // create compensation storage on bond if not exists
         if self.compensations(&token_identifier, nonce).is_empty() {
@@ -110,12 +114,7 @@ pub trait LifeBondingContract:
         only_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();
 
-        require!(
-            !self
-                .address_bonds(&caller, &token_identifier, nonce)
-                .is_empty(),
-            ERR_BOND_NOT_FOUND
-        );
+        // [TO DO] check if bond exists based on token_identifier and nonce
 
         let bond = self.address_bonds(&caller, &token_identifier, nonce).get();
 
