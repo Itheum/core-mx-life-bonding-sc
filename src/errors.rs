@@ -6,3 +6,4 @@ pub const ERR_INVALID_LOCK_PERIOD: &str = "Invalid lock period";
 pub const ERR_INVALID_AMOUNT_SENT: &str = "Invalid amount sent";
 pub const ERR_ENDPOINT_CALLABLE_ONLY_BY_SC: &str = "Endpoint callable only by smart contract";
 pub const ERR_BOND_NOT_FOUND: &str = "Bond not found";
+pub const ERR_BOND_ALREADY_CREATED: &str = "Bond already created";

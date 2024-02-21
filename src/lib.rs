@@ -6,8 +6,9 @@ use crate::{
     config::SECONDS_IN_DAY,
     contexts::base::BondCache,
     errors::{
-        ERR_BOND_NOT_FOUND, ERR_CONTRACT_INACTIVE, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC,
-        ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD, ERR_INVALID_TOKEN_IDENTIFIER,
+        ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_CONTRACT_INACTIVE,
+        ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD,
+        ERR_INVALID_TOKEN_IDENTIFIER,
     },
     storage::Compensation,
 };
@@ -56,8 +57,6 @@ pub trait LifeBondingContract:
         );
         let payment = self.call_value().single_esdt();
 
-        // [TO DO] check if bond was already created for this token identifier and nonce
-
         require!(
             payment.token_identifier == self.bond_payment_token().get(),
             ERR_INVALID_TOKEN_IDENTIFIER
@@ -83,11 +82,11 @@ pub trait LifeBondingContract:
 
         let bond_id = self
             .object_to_id()
-            .get_id_or_insert((token_identifier.clone(), nonce));
+            .get_id_or_insert((token_identifier.clone(), nonce)); // get or insert bond_id
 
         require!(
             !self.object_to_id().contains_id(bond_id),
-            ERR_BOND_NOT_FOUND
+            ERR_BOND_ALREADY_CREATED
         );
 
         // create compensation storage on bond if not exists
