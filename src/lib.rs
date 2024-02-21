@@ -7,8 +7,8 @@ use crate::{
     contexts::base::BondCache,
     errors::{
         ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_CONTRACT_INACTIVE,
-        ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD,
-        ERR_INVALID_TOKEN_IDENTIFIER,
+        ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC,
+        ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD, ERR_INVALID_TOKEN_IDENTIFIER,
     },
     storage::Compensation,
 };
@@ -55,6 +55,13 @@ pub trait LifeBondingContract:
                 .is_smart_contract(&self.blockchain().get_caller()),
             ERR_ENDPOINT_CALLABLE_ONLY_BY_SC
         );
+
+        require!(
+            self.accepted_callers()
+                .contains(&self.blockchain().get_caller()),
+            ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS
+        );
+
         let payment = self.call_value().single_esdt();
 
         require!(
@@ -89,18 +96,6 @@ pub trait LifeBondingContract:
             ERR_BOND_ALREADY_CREATED
         );
 
-        // create compensation storage on bond if not exists
-        if self.compensations(&token_identifier, nonce).is_empty() {
-            let compensation = Compensation {
-                token_identifier: token_identifier.clone(),
-                nonce,
-                total_compenstation_amount: BigUint::from(0u64),
-            };
-
-            self.compensations(&token_identifier, nonce)
-                .set(compensation);
-        }
-
         let mut bond_cache = BondCache::new(self, bond_id);
 
         bond_cache.address = original_caller.clone();
@@ -113,6 +108,21 @@ pub trait LifeBondingContract:
 
         self.address_bonds(&original_caller).insert(bond_id);
         self.bonds().insert(bond_id);
+
+        // create compensation storage on bond if not exists
+        if self
+            .compensations(&bond_cache.token_identifier, nonce)
+            .is_empty()
+        {
+            let compensation = Compensation {
+                token_identifier: bond_cache.token_identifier.clone(),
+                nonce,
+                total_compenstation_amount: BigUint::from(0u64),
+            };
+
+            self.compensations(&bond_cache.token_identifier, nonce)
+                .set(compensation);
+        }
     }
 
     #[endpoint(withdraw)]
@@ -120,9 +130,7 @@ pub trait LifeBondingContract:
         require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();
 
-        let bond_id = self
-            .object_to_id()
-            .get_id((token_identifier.clone(), nonce));
+        let bond_id = self.object_to_id().get_id((token_identifier, nonce));
 
         require!(self.object_to_id().contains_id(bond_id), ERR_BOND_NOT_FOUND);
 
@@ -142,10 +150,12 @@ pub trait LifeBondingContract:
                 &(&bond_cache.bond_amount - &penalty_amount),
             );
 
-            let mut compensation = self.compensations(&token_identifier, nonce).get();
-            compensation.total_compenstation_amount += &penalty_amount; // Update total compensation amount
+            let mut compensation = self
+                .compensations(&bond_cache.token_identifier, nonce)
+                .get();
+            compensation.total_compenstation_amount += &penalty_amount;
 
-            self.compensations(&token_identifier, nonce)
+            self.compensations(&bond_cache.token_identifier, nonce)
                 .set(compensation);
         } else {
             self.send().direct_esdt(
