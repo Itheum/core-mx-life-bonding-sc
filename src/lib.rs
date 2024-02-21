@@ -87,40 +87,40 @@ pub trait LifeBondingContract:
         let current_timestamp = self.blockchain().get_block_timestamp();
         let unbound_timestamp = current_timestamp + self.trasform_days_in_seconds(lock_period);
 
-        let bond_id = self
+        let check_bond_id = self
             .object_to_id()
-            .get_id_or_insert((token_identifier.clone(), nonce)); // get or insert bond_id
+            .get_id((token_identifier.clone(), nonce));
 
         require!(
-            !self.object_to_id().contains_id(bond_id),
+            !self.object_to_id().contains_id(check_bond_id),
             ERR_BOND_ALREADY_CREATED
         );
 
-        let mut bond_cache = BondCache::new(self, bond_id);
+        let bond_id = self
+            .object_to_id()
+            .insert_new((token_identifier.clone(), nonce));
 
-        bond_cache.address = original_caller.clone();
-        bond_cache.token_identifier = token_identifier;
-        bond_cache.nonce = nonce;
-        bond_cache.lock_period = lock_period;
-        bond_cache.bond_timestamp = current_timestamp;
-        bond_cache.unbound_timestamp = unbound_timestamp;
-        bond_cache.bond_amount = payment.amount;
+        self.bond_address(bond_id).set(original_caller.clone());
+        self.bond_token_identifier(bond_id)
+            .set(token_identifier.clone());
+        self.bond_nonce(bond_id).set(nonce);
+        self.bond_lock_period(bond_id).set(lock_period);
+        self.bond_timestamp(bond_id).set(current_timestamp);
+        self.unbound_timestamp(bond_id).set(unbound_timestamp);
+        self.bond_amount(bond_id).set(payment.amount);
 
         self.address_bonds(&original_caller).insert(bond_id);
         self.bonds().insert(bond_id);
 
         // create compensation storage on bond if not exists
-        if self
-            .compensations(&bond_cache.token_identifier, nonce)
-            .is_empty()
-        {
+        if self.compensations(&token_identifier, nonce).is_empty() {
             let compensation = Compensation {
-                token_identifier: bond_cache.token_identifier.clone(),
+                token_identifier: token_identifier.clone(),
                 nonce,
                 total_compenstation_amount: BigUint::from(0u64),
             };
 
-            self.compensations(&bond_cache.token_identifier, nonce)
+            self.compensations(&token_identifier, nonce)
                 .set(compensation);
         }
     }
@@ -134,7 +134,7 @@ pub trait LifeBondingContract:
 
         require!(self.object_to_id().contains_id(bond_id), ERR_BOND_NOT_FOUND);
 
-        let bond_cache = BondCache::new(self, bond_id);
+        let mut bond_cache = BondCache::new(self, bond_id);
 
         let current_timestamp = self.blockchain().get_block_timestamp();
 
@@ -165,6 +165,11 @@ pub trait LifeBondingContract:
                 &bond_cache.bond_amount,
             );
         }
+
+        bond_cache.clear();
+        self.object_to_id().remove_by_id(bond_id);
+        self.address_bonds(&caller).swap_remove(&bond_id);
+        self.bonds().swap_remove(&bond_id);
     }
 
     #[endpoint(renew)]

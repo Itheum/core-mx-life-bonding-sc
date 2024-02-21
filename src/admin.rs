@@ -51,7 +51,7 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         let penalty_amount =
             &bond_cache.bond_amount * &BigUint::from(penalty) / &BigUint::from(10_000u64);
 
-        bond_cache.bond_amount = &bond_cache.bond_amount - &penalty_amount;
+        bond_cache.bond_amount -= &penalty_amount;
 
         let mut compensation = self.compensations(&token_identifier, nonce).get();
         compensation.total_compenstation_amount += &penalty_amount; // Update total compensation amount
@@ -110,14 +110,8 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         self.bond_payment_token().set(token_identifier);
     }
 
-    #[endpoint(setAcceptedToken)]
-    fn set_accepted_token(&self, token_identifier: TokenIdentifier) {
-        only_privileged!(self, ERR_NOT_PRIVILEGED);
-        self.accepted_token().set(token_identifier);
-    }
-
     // lock period (in days) and bond amount
-    #[endpoint(setLockPeriodsAndBonds)]
+    #[endpoint(setPeriodsBonds)]
     fn set_lock_periods_and_bonds(&self, args: MultiValueEncoded<MultiValue2<u16, BigUint>>) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         for input in args.into_iter() {

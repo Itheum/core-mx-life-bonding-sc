@@ -33,6 +33,16 @@ where
             bond_amount: sc_ref.bond_amount(bond_id).get(),
         }
     }
+
+    pub fn clear(&mut self) {
+        self.sc_ref.bond_address(self.bond_id).clear();
+        self.sc_ref.bond_token_identifier(self.bond_id).clear();
+        self.sc_ref.bond_nonce(self.bond_id).clear();
+        self.sc_ref.bond_lock_period(self.bond_id).clear();
+        self.sc_ref.bond_timestamp(self.bond_id).clear();
+        self.sc_ref.unbound_timestamp(self.bond_id).clear();
+        self.sc_ref.bond_amount(self.bond_id).clear();
+    }
 }
 
 impl<'a, C> Drop for BondCache<'a, C>

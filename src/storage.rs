@@ -46,10 +46,6 @@ pub struct Compensation<M: ManagedTypeApi> {
 
 #[multiversx_sc::module]
 pub trait StorageModule {
-    #[view(getAcceptedToken)]
-    #[storage_mapper("accepted_token")]
-    fn accepted_token(&self) -> SingleValueMapper<TokenIdentifier>; // accepted SFT // [TO DO] read token identifier from minting contract
-
     #[view(getAcceptedCallers)]
     #[storage_mapper("accepted_callers")]
     fn accepted_callers(&self) -> UnorderedSetMapper<ManagedAddress>;

@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           33
+// Endpoints:                           31
 // Async Callback (empty):               1
-// Total number of exported functions:  35
+// Total number of exported functions:  33
 
 #![no_std]
 #![allow(internal_features)]
@@ -24,7 +24,6 @@ multiversx_sc_wasm_adapter::endpoints! {
         bond => bond
         withdraw => withdraw
         renew => renew
-        getAcceptedToken => accepted_token
         getAcceptedCallers => accepted_callers
         getBondPaymentToken => bond_payment_token
         getLockPeriods => lock_periods
@@ -45,8 +44,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         setContractStateInactive => set_contract_state_inactive
         setAcceptedCallers => set_accepted_callers
         setBondToken => set_bond_token
-        setAcceptedToken => set_accepted_token
-        setLockPeriodsAndBonds => set_lock_periods_and_bonds
+        setPeriodsBonds => set_lock_periods_and_bonds
         setMinimumPenalty => set_minimum_penalty
         setMaximumPenalty => set_maximum_penalty
         setWithdrawPenalty => set_withdraw_penalty
