@@ -13,9 +13,19 @@ pub enum PenaltyType {
 }
 
 #[derive(
-    TopEncode, TopDecode, NestedEncode, NestedDecode, TypeAbi, Clone, PartialEq, Eq, Debug,
+    TopEncode,
+    TopDecode,
+    NestedEncode,
+    NestedDecode,
+    TypeAbi,
+    Clone,
+    ManagedVecItem,
+    PartialEq,
+    Eq,
+    Debug,
 )]
 pub struct Bond<M: ManagedTypeApi> {
+    pub bond_id: u64,
     pub address: ManagedAddress<M>,
     pub token_identifier: TokenIdentifier<M>,
     pub nonce: u64,
@@ -44,9 +54,9 @@ pub trait StorageModule {
     #[storage_mapper("accepted_callers")]
     fn accepted_callers(&self) -> UnorderedSetMapper<ManagedAddress>;
 
-    #[view(getBondToken)]
-    #[storage_mapper("bond_token")]
-    fn bond_token(&self) -> SingleValueMapper<TokenIdentifier>; // bonding token
+    #[view(getBondPaymentToken)]
+    #[storage_mapper("bond_payment_token")]
+    fn bond_payment_token(&self) -> SingleValueMapper<TokenIdentifier>; // bonding token
 
     #[view(getLockPeriods)]
     #[storage_mapper("lock_periods")]
@@ -100,11 +110,9 @@ pub trait StorageModule {
     #[storage_mapper("token_identifier_nonce_to_id")]
     fn object_to_id(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
 
-    #[view(getAddressBonds)]
     #[storage_mapper("address_bonds")]
     fn address_bonds(&self, address: &ManagedAddress) -> UnorderedSetMapper<u64>;
 
-    #[view(getBonds)]
     #[storage_mapper("bonds")]
     fn bonds(&self) -> UnorderedSetMapper<u64>;
 }

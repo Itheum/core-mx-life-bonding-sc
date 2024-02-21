@@ -113,7 +113,7 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
             token_identifier.is_valid_esdt_identifier(),
             ERR_INVALID_TOKEN_IDENTIFIER
         );
-        self.bond_token().set(token_identifier);
+        self.bond_payment_token().set(token_identifier);
     }
 
     #[endpoint(setAcceptedToken)]

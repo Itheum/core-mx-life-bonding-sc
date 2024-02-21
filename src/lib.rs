@@ -59,7 +59,7 @@ pub trait LifeBondingContract:
         // [TO DO] check if bond was already created for this token identifier and nonce
 
         require!(
-            payment.token_identifier == self.bond_token().get(),
+            payment.token_identifier == self.bond_payment_token().get(),
             ERR_INVALID_TOKEN_IDENTIFIER
         );
 
@@ -141,7 +141,7 @@ pub trait LifeBondingContract:
 
             self.send().direct_esdt(
                 &caller,
-                &self.bond_token().get(),
+                &self.bond_payment_token().get(),
                 0u64,
                 &(&bond_cache.bond_amount - &penalty_amount),
             );
@@ -154,7 +154,7 @@ pub trait LifeBondingContract:
         } else {
             self.send().direct_esdt(
                 &caller,
-                &self.bond_token().get(),
+                &self.bond_payment_token().get(),
                 0u64,
                 &bond_cache.bond_amount,
             );
