@@ -28,10 +28,7 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
             .object_to_id()
             .get_id((token_identifier.clone(), nonce));
 
-        require!(
-            !self.object_to_id().contains_id(bond_id),
-            ERR_BOND_NOT_FOUND
-        );
+        require!(self.object_to_id().contains_id(bond_id), ERR_BOND_NOT_FOUND);
 
         let mut bond_cache = BondCache::new(self, bond_id);
 
@@ -71,10 +68,7 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
             .object_to_id()
             .get_id_or_insert((token_identifier, nonce));
 
-        require!(
-            !self.object_to_id().contains_id(bond_id),
-            ERR_BOND_NOT_FOUND
-        );
+        require!(self.object_to_id().contains_id(bond_id), ERR_BOND_NOT_FOUND);
 
         let mut bond_cache = BondCache::new(self, bond_id);
 
