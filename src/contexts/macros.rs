@@ -9,7 +9,7 @@ macro_rules! only_privileged {
 }
 
 #[macro_export]
-macro_rules! only_active {
+macro_rules! require_contract_active {
     ($trait_self: expr, $error_msg:expr) => {
         let state = $trait_self.contract_state().get();
         if !$trait_self.is_state_active(state) {

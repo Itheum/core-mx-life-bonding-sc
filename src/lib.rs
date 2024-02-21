@@ -49,7 +49,7 @@ pub trait LifeBondingContract:
         nonce: u64,
         lock_period: u16, //days
     ) {
-        only_active!(self, ERR_CONTRACT_INACTIVE);
+        require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         require!(
             self.blockchain()
                 .is_smart_contract(&self.blockchain().get_caller()),
@@ -117,7 +117,7 @@ pub trait LifeBondingContract:
 
     #[endpoint(withdraw)]
     fn withdraw(&self, token_identifier: TokenIdentifier, nonce: u64) {
-        only_active!(self, ERR_CONTRACT_INACTIVE);
+        require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();
 
         let bond_id = self
@@ -164,7 +164,7 @@ pub trait LifeBondingContract:
         nonce: u64,
         new_lock_period: OptionalValue<u16>,
     ) {
-        only_active!(self, ERR_CONTRACT_INACTIVE);
+        require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();
 
         let bond_id = self
