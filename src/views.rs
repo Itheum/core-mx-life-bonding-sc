@@ -1,4 +1,4 @@
-use crate::storage::{self, Bond};
+use crate::storage::{self, Bond, Compensation};
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
@@ -17,6 +17,15 @@ pub trait ViewsModule: storage::StorageModule {
             unbound_timestamp: self.unbound_timestamp(bond_id).get(),
             bond_amount: self.bond_amount(bond_id).get(),
         }
+    }
+
+    #[view(getCompensation)]
+    fn get_compensation(
+        &self,
+        token_identifier: TokenIdentifier,
+        nonce: u64,
+    ) -> Compensation<Self::Api> {
+        self.compensations(&token_identifier, nonce).get()
     }
 
     #[view(getBondsByTokenIdentifierNonce)]
