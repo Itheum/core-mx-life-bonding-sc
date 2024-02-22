@@ -10,7 +10,7 @@ where
     pub address: ManagedAddress<C::Api>,
     pub token_identifier: TokenIdentifier<C::Api>,
     pub nonce: u64,
-    pub lock_period: u16,
+    pub lock_period: u64,
     pub bond_timestamp: u64,
     pub unbound_timestamp: u64,
     pub bond_amount: BigUint<C::Api>,

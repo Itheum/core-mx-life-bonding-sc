@@ -29,7 +29,7 @@ pub struct Bond<M: ManagedTypeApi> {
     pub address: ManagedAddress<M>,
     pub token_identifier: TokenIdentifier<M>,
     pub nonce: u64,
-    pub lock_period: u16,
+    pub lock_period: u64,
     pub bond_timestamp: u64,
     pub unbound_timestamp: u64,
     pub bond_amount: BigUint<M>,
@@ -56,11 +56,11 @@ pub trait StorageModule {
 
     #[view(getLockPeriods)]
     #[storage_mapper("lock_periods")]
-    fn lock_periods(&self) -> SetMapper<u16>; // list of lock periods in days // max_value = 65535 ~ 179 years
+    fn lock_periods(&self) -> SetMapper<u64>; // list of lock periods in days // max_value = 65535 ~ 179 years
 
     #[view(getLockPeriodBondAmount)]
     #[storage_mapper("lock_period_bond_amount")]
-    fn lock_period_bond_amount(&self, lock_period: u16) -> SingleValueMapper<BigUint>; // bonds based on lock_period if 0 then period not accepted
+    fn lock_period_bond_amount(&self, lock_period: u64) -> SingleValueMapper<BigUint>; // bonds based on lock_period if 0 then period not accepted
 
     #[view(getMinimumPenalty)]
     #[storage_mapper("minimum_penalty")]
@@ -92,15 +92,15 @@ pub trait StorageModule {
     fn bond_nonce(&self, bond_id: u64) -> SingleValueMapper<u64>;
 
     #[storage_mapper("bond_lock_period")]
-    fn bond_lock_period(&self, bond_id: u64) -> SingleValueMapper<u16>;
+    fn bond_lock_period(&self, bond_id: u64) -> SingleValueMapper<u64>;
 
-    #[storage_mapper("bond_bond_timestamp")]
+    #[storage_mapper("bond_timestamp")]
     fn bond_timestamp(&self, bond_id: u64) -> SingleValueMapper<u64>;
 
-    #[storage_mapper("bond_unbound_timestamp")]
+    #[storage_mapper("unbound_timestamp")]
     fn unbound_timestamp(&self, bond_id: u64) -> SingleValueMapper<u64>;
 
-    #[storage_mapper("bond_bond_amount")]
+    #[storage_mapper("bond_amount")]
     fn bond_amount(&self, bond_id: u64) -> SingleValueMapper<BigUint>;
 
     #[storage_mapper("token_identifier_nonce_to_id")]

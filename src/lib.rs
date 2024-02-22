@@ -47,7 +47,7 @@ pub trait LifeBondingContract:
         original_caller: ManagedAddress,
         token_identifier: TokenIdentifier,
         nonce: u64,
-        lock_period: u16, //days
+        lock_period: u64, //days
     ) {
         require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         require!(
@@ -85,7 +85,8 @@ pub trait LifeBondingContract:
         require!(payment.amount == bond_amount, ERR_INVALID_AMOUNT_SENT);
 
         let current_timestamp = self.blockchain().get_block_timestamp();
-        let unbound_timestamp = current_timestamp + self.trasform_days_in_seconds(lock_period);
+        let period_to_add = self.trasform_days_in_seconds(lock_period);
+        let unbound_timestamp = current_timestamp + period_to_add;
 
         let check_bond_id = self
             .object_to_id()
@@ -177,7 +178,7 @@ pub trait LifeBondingContract:
         &self,
         token_identifier: TokenIdentifier,
         nonce: u64,
-        new_lock_period: OptionalValue<u16>,
+        new_lock_period: OptionalValue<u64>,
     ) {
         require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();
@@ -204,7 +205,7 @@ pub trait LifeBondingContract:
             let remaining_lock_period = remaining_time / SECONDS_IN_DAY;
             bond_cache.unbound_timestamp =
                 current_timestamp + self.trasform_days_in_seconds(new_lock_period);
-            bond_cache.lock_period = new_lock_period + remaining_lock_period as u16;
+            bond_cache.lock_period = new_lock_period + remaining_lock_period;
         } else {
             bond_cache.unbound_timestamp =
                 current_timestamp + self.trasform_days_in_seconds(new_lock_period);

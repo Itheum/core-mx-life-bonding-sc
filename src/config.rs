@@ -9,7 +9,7 @@ pub enum State {
     Active,
 }
 
-pub const SECONDS_IN_DAY: u64 = 86_400;
+pub const SECONDS_IN_DAY: u64 = 86_400u64;
 
 #[multiversx_sc::module]
 pub trait ConfigModule {
@@ -46,7 +46,7 @@ pub trait ConfigModule {
         state == State::Active
     }
 
-    fn trasform_days_in_seconds(&self, days: u16) -> u64 {
-        days as u64 * SECONDS_IN_DAY
+    fn trasform_days_in_seconds(&self, days: u64) -> u64 {
+        days * SECONDS_IN_DAY
     }
 }

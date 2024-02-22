@@ -74,4 +74,16 @@ pub trait ViewsModule: storage::StorageModule {
 
         bonds
     }
+
+    #[view(getLockPeriodsBonds)]
+    fn get_lock_periods_bonds(&self) -> (ManagedVec<u64>, ManagedVec<BigUint>) {
+        let lock_periods = self.lock_periods().into_iter().collect::<ManagedVec<u64>>();
+        let bond_amounts = self
+            .lock_periods()
+            .into_iter()
+            .map(|lock_period| self.lock_period_bond_amount(lock_period).get())
+            .collect::<ManagedVec<BigUint>>();
+
+        (lock_periods, bond_amounts)
+    }
 }

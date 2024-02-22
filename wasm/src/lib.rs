@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           31
+// Endpoints:                           32
 // Async Callback (empty):               1
-// Total number of exported functions:  33
+// Total number of exported functions:  34
 
 #![no_std]
 #![allow(internal_features)]
@@ -38,6 +38,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getBonds => get_bonds
         getAddressBonds => get_address_bonds
         getAllBonds => get_all_bonds
+        getLockPeriodsBonds => get_lock_periods_bonds
         sanction => sanction
         modifyBond => modify_bond
         setContractStateActive => set_contract_state_active
