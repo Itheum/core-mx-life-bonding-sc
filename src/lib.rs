@@ -177,7 +177,7 @@ pub trait LifeBondingContract:
         &self,
         token_identifier: TokenIdentifier,
         nonce: u64,
-        new_lock_period: OptionalValue<u64>,
+        new_lock_period: OptionalValue<u64>, // remove this
     ) {
         require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();

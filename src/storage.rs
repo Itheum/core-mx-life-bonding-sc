@@ -29,7 +29,7 @@ pub struct Bond<M: ManagedTypeApi> {
     pub address: ManagedAddress<M>,
     pub token_identifier: TokenIdentifier<M>,
     pub nonce: u64,
-    pub lock_period: u64,
+    pub lock_period: u64, //seconds
     pub bond_timestamp: u64,
     pub unbound_timestamp: u64,
     pub bond_amount: BigUint<M>,
