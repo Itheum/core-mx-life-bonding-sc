@@ -35,15 +35,20 @@ pub trait ViewsModule: storage::StorageModule {
     ) -> ManagedVec<Bond<Self::Api>> {
         let bonds = input
             .into_iter()
-            .map(|value| {
+            .filter_map(|value| {
                 let (token_identifier, nonce) = value.into_tuple();
                 let bond_id = self.object_to_id().get_id((token_identifier, nonce));
-                self.get_bond(bond_id)
+                if bond_id != 0 {
+                    Some(self.get_bond(bond_id))
+                } else {
+                    None
+                }
             })
             .collect::<ManagedVec<Bond<Self::Api>>>();
 
         bonds
     }
+
     #[view(getBonds)]
     fn get_bonds(&self, bond_ids: MultiValueEncoded<u64>) -> ManagedVec<Bond<Self::Api>> {
         let bonds = bond_ids
@@ -73,6 +78,24 @@ pub trait ViewsModule: storage::StorageModule {
             .collect();
 
         bonds
+    }
+
+    #[view(getPagedBonds)]
+    fn get_paged_bonds(&self, start_index: u64, end_index: u64) -> ManagedVec<Bond<Self::Api>> {
+        let bonds = self
+            .bonds()
+            .into_iter()
+            .skip(start_index as usize)
+            .take((end_index - start_index + 1) as usize)
+            .map(|bond_id| self.get_bond(bond_id))
+            .collect();
+
+        bonds
+    }
+
+    #[view(getBondsLen)]
+    fn get_bonds_len(&self) -> usize {
+        self.bonds().len() as usize
     }
 
     #[view(getLockPeriodsBonds)]

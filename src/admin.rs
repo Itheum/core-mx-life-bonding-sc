@@ -100,6 +100,8 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         }
     }
 
+    // [TO DO] add remove callers endpoint
+
     #[endpoint(setBondToken)]
     fn set_bond_token(&self, token_identifier: TokenIdentifier) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
@@ -120,6 +122,8 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
             self.lock_period_bond_amount(lock_period).set(bond);
         }
     }
+
+    // [TO DO] add remove period endpoint
 
     #[endpoint(setMinimumPenalty)]
     fn set_minimum_penalty(&self, penalty: u64) {

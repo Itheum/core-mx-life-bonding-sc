@@ -45,8 +45,4 @@ pub trait ConfigModule {
     fn is_state_active(&self, state: State) -> bool {
         state == State::Active
     }
-
-    fn trasform_days_in_seconds(&self, days: u64) -> u64 {
-        days * SECONDS_IN_DAY
-    }
 }

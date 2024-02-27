@@ -1,7 +1,7 @@
 PROXY=https://devnet-gateway.multiversx.com
 CHAIN_ID="D"
 
-WALLET="../wallet.pem"
+WALLET="../wallet2.pem"
 USER="../wallet2.pem"
 
 ADDRESS=$(mxpy data load --key=address-devnet)
