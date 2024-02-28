@@ -278,12 +278,16 @@ pub trait LifeBondingContract:
         compensation_cache.accumulated_amount -= &refund_amount;
         compensation_cache.proof_amount -= &refund.proof_of_refund.amount;
 
-        self.send().direct_esdt(
-            &caller,
-            &self.bond_payment_token().get(),
+        let mut payments = ManagedVec::new();
+
+        payments.push(refund.proof_of_refund.clone());
+        payments.push(EsdtTokenPayment::new(
+            self.bond_payment_token().get(),
             0u64,
-            &refund_amount,
-        );
+            refund_amount,
+        ));
+
+        self.send().direct_multi(&caller, &payments);
 
         self.address_refund(&caller, compensation_id).clear();
         self.refund_whitelist(compensation_id).remove(&caller);
