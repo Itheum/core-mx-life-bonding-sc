@@ -9,8 +9,6 @@ pub enum State {
     Active,
 }
 
-pub const SECONDS_IN_DAY: u64 = 86_400u64;
-
 #[multiversx_sc::module]
 pub trait ConfigModule {
     #[only_owner]

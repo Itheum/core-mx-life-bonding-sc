@@ -3,7 +3,6 @@
 use config::State;
 
 use crate::{
-    config::SECONDS_IN_DAY,
     contexts::base::BondCache,
     errors::{
         ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_CONTRACT_INACTIVE,
@@ -69,7 +68,7 @@ pub trait LifeBondingContract:
             ERR_INVALID_TOKEN_IDENTIFIER
         );
 
-        // [TO DO] check token_identifier is accepted (not really needed as this endpoint will be called by the minting contract)
+        // check token_identifier is accepted (not really needed as this endpoint will be called by the minting contract)
 
         require!(
             self.lock_periods().contains(&lock_period),
@@ -173,12 +172,7 @@ pub trait LifeBondingContract:
     }
 
     #[endpoint(renew)]
-    fn renew(
-        &self,
-        token_identifier: TokenIdentifier,
-        nonce: u64,
-        new_lock_period: OptionalValue<u64>, // remove this
-    ) {
+    fn renew(&self, token_identifier: TokenIdentifier, nonce: u64) {
         require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();
 
@@ -194,20 +188,7 @@ pub trait LifeBondingContract:
 
         let current_timestamp = self.blockchain().get_block_timestamp();
 
-        let new_lock_period = match new_lock_period.into_option() {
-            Some(value) => value,           // new value
-            None => bond_cache.lock_period, // old value
-        };
-
-        if bond_cache.unbound_timestamp > current_timestamp {
-            let remaining_time = bond_cache.unbound_timestamp - current_timestamp;
-            let remaining_lock_period = remaining_time / SECONDS_IN_DAY;
-            bond_cache.unbound_timestamp = current_timestamp + new_lock_period;
-            bond_cache.lock_period = new_lock_period + remaining_lock_period;
-        } else {
-            bond_cache.unbound_timestamp = current_timestamp + new_lock_period;
-            bond_cache.lock_period = new_lock_period;
-            bond_cache.bond_timestamp = current_timestamp;
-        }
+        bond_cache.unbound_timestamp = current_timestamp + bond_cache.lock_period;
+        bond_cache.bond_timestamp = current_timestamp;
     }
 }

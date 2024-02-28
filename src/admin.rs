@@ -100,7 +100,13 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         }
     }
 
-    // [TO DO] add remove callers endpoint
+    #[endpoint(removeAcceptedCallers)]
+    fn remove_accepted_callers(&self, callers: MultiValueEncoded<ManagedAddress>) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+        for caller in callers.into_iter() {
+            self.accepted_callers().swap_remove(&caller);
+        }
+    }
 
     #[endpoint(setBondToken)]
     fn set_bond_token(&self, token_identifier: TokenIdentifier) {
@@ -112,9 +118,8 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         self.bond_payment_token().set(token_identifier);
     }
 
-    // lock period (in days) and bond amount
     #[endpoint(setPeriodsBonds)]
-    fn set_lock_periods_and_bonds(&self, args: MultiValueEncoded<MultiValue2<u64, BigUint>>) {
+    fn set_lock_periods_with_bonds(&self, args: MultiValueEncoded<MultiValue2<u64, BigUint>>) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         for input in args.into_iter() {
             let (lock_period, bond) = input.into_tuple();
@@ -123,7 +128,14 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         }
     }
 
-    // [TO DO] add remove period endpoint
+    #[endpoint(removePeriodsBonds)]
+    fn remove_lock_periods_with_bonds(&self, lock_periods: MultiValueEncoded<u64>) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+        for period in lock_periods.into_iter() {
+            self.lock_periods().remove(&period);
+            self.lock_period_bond_amount(period).clear();
+        }
+    }
 
     #[endpoint(setMinimumPenalty)]
     fn set_minimum_penalty(&self, penalty: u64) {
