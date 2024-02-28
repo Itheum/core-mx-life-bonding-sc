@@ -14,3 +14,4 @@ pub const ERR_INVALID_PAYMENT: &str = "Invalid payment";
 pub const ERR_INVALID_TIMELINE_TO_PROOF: &str = "Invalid timeline to proof";
 pub const ERR_INVALID_TIMELINE_TO_REFUND: &str = "Invalid timeline to refund";
 pub const ERR_REFUND_NOT_FOUND: &str = "Refund not found";
+pub const ERR_INVALID_TIMESTAMP: &str = "Invalid timestamp";

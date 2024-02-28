@@ -6,7 +6,8 @@ use crate::{
     },
     errors::{
         ERR_BOND_NOT_FOUND, ERR_COMPENSATION_NOT_FOUND, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC,
-        ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
+        ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP, ERR_INVALID_TOKEN_IDENTIFIER,
+        ERR_NOT_PRIVILEGED,
     },
     only_privileged,
     storage::{self, PenaltyType},
@@ -29,6 +30,10 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
             self.compensations_ids().contains_id(compensation_id),
             ERR_COMPENSATION_NOT_FOUND
         );
+
+        let current_timestamp = self.blockchain().get_block_timestamp();
+
+        require!(timestamp > current_timestamp, ERR_INVALID_TIMESTAMP);
 
         let mut compensation_cache =
             compensation_cache::CompensationCache::new(self, compensation_id);
