@@ -1,9 +1,12 @@
 use crate::{
     config::State,
-    contexts::base::BondCache,
+    contexts::{
+        bond_cache::BondCache,
+        compensation_cache::{self, CompensationCache},
+    },
     errors::{
-        ERR_BOND_NOT_FOUND, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_PENALTY_VALUE,
-        ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
+        ERR_BOND_NOT_FOUND, ERR_COMPENSATION_NOT_FOUND, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC,
+        ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
     },
     only_privileged,
     storage::{self, PenaltyType},
@@ -14,6 +17,25 @@ multiversx_sc::derive_imports!();
 
 #[multiversx_sc::module]
 pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
+    #[endpoint(initiateRefund)]
+    fn initiate_refund(&self, token_identifier: TokenIdentifier, nonce: u64, timestamp: u64) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+
+        let compensation_id = self
+            .compensations_ids()
+            .get_id((token_identifier.clone(), nonce));
+
+        require!(
+            self.compensations_ids().contains_id(compensation_id),
+            ERR_COMPENSATION_NOT_FOUND
+        );
+
+        let mut compensation_cache =
+            compensation_cache::CompensationCache::new(self, compensation_id);
+
+        compensation_cache.end_date = timestamp;
+    }
+
     #[endpoint(sanction)]
     fn sanction(
         &self,
@@ -24,13 +46,17 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
     ) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
 
-        let bond_id = self
-            .object_to_id()
-            .get_id((token_identifier.clone(), nonce));
+        let bond_id = self.bonds_ids().get_id((token_identifier.clone(), nonce));
+        let compensation_id = self.compensations_ids().get_id((token_identifier, nonce));
 
-        require!(self.object_to_id().contains_id(bond_id), ERR_BOND_NOT_FOUND);
+        require!(self.bonds_ids().contains_id(bond_id), ERR_BOND_NOT_FOUND);
+        require!(
+            self.compensations_ids().contains_id(compensation_id),
+            ERR_COMPENSATION_NOT_FOUND
+        );
 
         let mut bond_cache = BondCache::new(self, bond_id);
+        let mut compensation_cache = CompensationCache::new(self, compensation_id);
 
         let penalty = match penalty {
             PenaltyType::Minimum => self.minimum_penalty().get(),
@@ -53,22 +79,16 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
 
         bond_cache.bond_amount -= &penalty_amount;
 
-        let mut compensation = self.compensations(&token_identifier, nonce).get();
-        compensation.total_compenstation_amount += &penalty_amount; // Update total compensation amount
-
-        self.compensations(&token_identifier, nonce)
-            .set(compensation);
+        compensation_cache.accumulated_amount += &penalty_amount; // Update total compensation amount
     }
 
     #[endpoint(modifyBond)]
     fn modify_bond(&self, token_identifier: TokenIdentifier, nonce: u64) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
 
-        let bond_id = self
-            .object_to_id()
-            .get_id_or_insert((token_identifier, nonce));
+        let bond_id = self.bonds_ids().get_id_or_insert((token_identifier, nonce));
 
-        require!(self.object_to_id().contains_id(bond_id), ERR_BOND_NOT_FOUND);
+        require!(self.bonds_ids().contains_id(bond_id), ERR_BOND_NOT_FOUND);
 
         let mut bond_cache = BondCache::new(self, bond_id);
 

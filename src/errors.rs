@@ -9,3 +9,8 @@ pub const ERR_BOND_NOT_FOUND: &str = "Bond not found";
 pub const ERR_BOND_ALREADY_CREATED: &str = "Bond already created";
 pub const ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS: &str =
     "Endpoint callable only by accepted callers";
+pub const ERR_COMPENSATION_NOT_FOUND: &str = "Compensation not found";
+pub const ERR_INVALID_PAYMENT: &str = "Invalid payment";
+pub const ERR_INVALID_TIMELINE_TO_PROOF: &str = "Invalid timeline to proof";
+pub const ERR_INVALID_TIMELINE_TO_REFUND: &str = "Invalid timeline to refund";
+pub const ERR_REFUND_NOT_FOUND: &str = "Refund not found";

@@ -3,13 +3,15 @@
 use config::State;
 
 use crate::{
-    contexts::base::BondCache,
+    contexts::{bond_cache::BondCache, compensation_cache::CompensationCache},
     errors::{
-        ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_CONTRACT_INACTIVE,
-        ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC,
-        ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD, ERR_INVALID_TOKEN_IDENTIFIER,
+        ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_COMPENSATION_NOT_FOUND,
+        ERR_CONTRACT_INACTIVE, ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS,
+        ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD,
+        ERR_INVALID_PAYMENT, ERR_INVALID_TIMELINE_TO_PROOF, ERR_INVALID_TIMELINE_TO_REFUND,
+        ERR_INVALID_TOKEN_IDENTIFIER, ERR_REFUND_NOT_FOUND,
     },
-    storage::Compensation,
+    storage::Refund,
 };
 
 multiversx_sc::imports!();
@@ -86,17 +88,15 @@ pub trait LifeBondingContract:
         let current_timestamp = self.blockchain().get_block_timestamp();
         let unbound_timestamp = current_timestamp + lock_period;
 
-        let check_bond_id = self
-            .object_to_id()
-            .get_id((token_identifier.clone(), nonce));
+        let check_bond_id = self.bonds_ids().get_id((token_identifier.clone(), nonce));
 
         require!(
-            !self.object_to_id().contains_id(check_bond_id),
+            !self.bonds_ids().contains_id(check_bond_id),
             ERR_BOND_ALREADY_CREATED
         );
 
         let bond_id = self
-            .object_to_id()
+            .bonds_ids()
             .insert_new((token_identifier.clone(), nonce));
 
         self.bond_address(bond_id).set(original_caller.clone());
@@ -111,17 +111,20 @@ pub trait LifeBondingContract:
         self.address_bonds(&original_caller).insert(bond_id);
         self.bonds().insert(bond_id);
 
-        // create compensation storage on bond if not exists
-        if self.compensations(&token_identifier, nonce).is_empty() {
-            let compensation = Compensation {
-                token_identifier: token_identifier.clone(),
-                nonce,
-                total_compenstation_amount: BigUint::from(0u64),
-            };
+        let compensation_id = self
+            .compensations_ids()
+            .insert_new((token_identifier.clone(), nonce));
 
-            self.compensations(&token_identifier, nonce)
-                .set(compensation);
-        }
+        self.compensations().insert(compensation_id);
+
+        self.compensation_token_identifer(compensation_id)
+            .set(token_identifier);
+        self.compensation_nonce(compensation_id).set(nonce);
+        self.compensation_accumulated_amount(compensation_id)
+            .set(BigUint::zero());
+        self.compensation_proof_amount(compensation_id)
+            .set(BigUint::zero());
+        self.compensation_end_date(compensation_id).set(0u64);
     }
 
     #[endpoint(withdraw)]
@@ -129,9 +132,10 @@ pub trait LifeBondingContract:
         require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();
 
-        let bond_id = self.object_to_id().get_id((token_identifier, nonce));
+        let bond_id = self.bonds_ids().get_id((token_identifier.clone(), nonce));
+        let compensation_id = self.compensations_ids().get_id((token_identifier, nonce));
 
-        require!(self.object_to_id().contains_id(bond_id), ERR_BOND_NOT_FOUND);
+        require!(self.bonds_ids().contains_id(bond_id), ERR_BOND_NOT_FOUND);
 
         let mut bond_cache = BondCache::new(self, bond_id);
 
@@ -149,13 +153,9 @@ pub trait LifeBondingContract:
                 &(&bond_cache.bond_amount - &penalty_amount),
             );
 
-            let mut compensation = self
-                .compensations(&bond_cache.token_identifier, nonce)
-                .get();
-            compensation.total_compenstation_amount += &penalty_amount;
+            let mut compensation_cache = CompensationCache::new(self, compensation_id);
 
-            self.compensations(&bond_cache.token_identifier, nonce)
-                .set(compensation);
+            compensation_cache.accumulated_amount += &penalty_amount;
         } else {
             self.send().direct_esdt(
                 &caller,
@@ -166,7 +166,7 @@ pub trait LifeBondingContract:
         }
 
         bond_cache.clear();
-        self.object_to_id().remove_by_id(bond_id);
+        self.bonds_ids().remove_by_id(bond_id);
         self.address_bonds(&caller).swap_remove(&bond_id);
         self.bonds().swap_remove(&bond_id);
     }
@@ -176,11 +176,9 @@ pub trait LifeBondingContract:
         require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();
 
-        let bond_id = self
-            .object_to_id()
-            .get_id_or_insert((token_identifier, nonce));
+        let bond_id = self.bonds_ids().get_id_or_insert((token_identifier, nonce));
 
-        require!(self.object_to_id().contains_id(bond_id), ERR_BOND_NOT_FOUND);
+        require!(self.bonds_ids().contains_id(bond_id), ERR_BOND_NOT_FOUND);
 
         let mut bond_cache = BondCache::new(self, bond_id);
 
@@ -190,5 +188,112 @@ pub trait LifeBondingContract:
 
         bond_cache.unbound_timestamp = current_timestamp + bond_cache.lock_period;
         bond_cache.bond_timestamp = current_timestamp;
+    }
+
+    #[payable("*")]
+    #[endpoint(proof)]
+    fn add_proof(&self) {
+        let caller = self.blockchain().get_caller();
+        let payment = self.call_value().single_esdt();
+
+        let token_type = self
+            .blockchain()
+            .get_esdt_token_data(
+                &self.blockchain().get_sc_address(),
+                &payment.token_identifier,
+                payment.token_nonce,
+            )
+            .token_type;
+
+        let compensation_id = self
+            .compensations_ids()
+            .get_id((payment.token_identifier.clone(), payment.token_nonce));
+
+        require!(
+            self.compensations_ids().contains_id(compensation_id),
+            ERR_COMPENSATION_NOT_FOUND
+        );
+
+        require!(
+            token_type == EsdtTokenType::NonFungible,
+            ERR_INVALID_PAYMENT
+        );
+
+        let mut compensation_cache = CompensationCache::new(self, compensation_id);
+
+        let current_timestamp = self.blockchain().get_block_timestamp();
+
+        require!(
+            current_timestamp < compensation_cache.end_date,
+            ERR_INVALID_TIMELINE_TO_PROOF
+        );
+
+        self.refund_whitelist(compensation_id).add(&caller);
+
+        compensation_cache.proof_amount += &payment.amount;
+
+        let refund = Refund {
+            compensation_id,
+            address: caller.clone(),
+            proof_of_refund: payment,
+        };
+
+        self.address_refund(&caller, compensation_id).set(refund);
+    }
+
+    #[endpoint(claimRefund)]
+    fn claim_refund(&self, token_identifier: TokenIdentifier, nonce: u64) {
+        let caller = self.blockchain().get_caller();
+
+        let compensation_id = self.compensations_ids().get_id((token_identifier, nonce));
+
+        self.refund_whitelist(compensation_id)
+            .require_whitelisted(&caller);
+
+        require!(
+            self.compensations_ids().contains_id(compensation_id),
+            ERR_COMPENSATION_NOT_FOUND
+        );
+        let mut compensation_cache = CompensationCache::new(self, compensation_id);
+
+        let current_timestamp = self.blockchain().get_block_timestamp();
+
+        require!(
+            current_timestamp > compensation_cache.end_date,
+            ERR_INVALID_TIMELINE_TO_REFUND
+        );
+
+        require!(
+            self.address_refund(&caller, compensation_id).is_empty(),
+            ERR_REFUND_NOT_FOUND
+        );
+
+        let refund = self.address_refund(&caller, compensation_id).get();
+
+        let compensation_per_token =
+            &compensation_cache.accumulated_amount / &compensation_cache.proof_amount;
+
+        let refund_amount = &refund.proof_of_refund.amount * &compensation_per_token;
+
+        compensation_cache.accumulated_amount -= &refund_amount;
+        compensation_cache.proof_amount -= &refund.proof_of_refund.amount;
+
+        self.send().direct_esdt(
+            &caller,
+            &self.bond_payment_token().get(),
+            0u64,
+            &refund_amount,
+        );
+
+        self.address_refund(&caller, compensation_id).clear();
+        self.refund_whitelist(compensation_id).remove(&caller);
+
+        if compensation_cache.accumulated_amount == BigUint::zero()
+            && compensation_cache.proof_amount == BigUint::zero()
+        {
+            self.compensations().swap_remove(&compensation_id);
+            compensation_cache.clear();
+            self.compensations_ids().remove_by_id(compensation_id);
+        }
     }
 }

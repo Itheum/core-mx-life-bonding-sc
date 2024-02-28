@@ -1,4 +1,4 @@
-use crate::storage::{self, Bond, Compensation};
+use crate::storage::{self, Bond, Compensation, Refund};
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
@@ -20,12 +20,83 @@ pub trait ViewsModule: storage::StorageModule {
     }
 
     #[view(getCompensation)]
-    fn get_compensation(
+    fn get_compensation(&self, compensation_id: u64) -> Compensation<Self::Api> {
+        Compensation {
+            compensation_id,
+            token_identifier: self.compensation_token_identifer(compensation_id).get(),
+            nonce: self.compensation_nonce(compensation_id).get(),
+            accumulated_amount: self.compensation_accumulated_amount(compensation_id).get(),
+            proof_amount: self.compensation_proof_amount(compensation_id).get(),
+            end_date: self.compensation_end_date(compensation_id).get(),
+        }
+    }
+
+    #[view(getCompensations)]
+    fn get_compensations(
         &self,
+        input: MultiValueEncoded<MultiValue2<TokenIdentifier, u64>>,
+    ) -> ManagedVec<Compensation<Self::Api>> {
+        let compensations = input
+            .into_iter()
+            .filter_map(|value| {
+                let (token_identifier, nonce) = value.into_tuple();
+                let compensation_id = self.compensations_ids().get_id((token_identifier, nonce));
+                if compensation_id != 0 {
+                    Some(self.get_compensation(compensation_id))
+                } else {
+                    None
+                }
+            })
+            .collect::<ManagedVec<Compensation<Self::Api>>>();
+
+        compensations
+    }
+
+    #[view(getPagedCompensations)]
+    fn get_paged_compensations(
+        &self,
+        start_index: u64,
+        end_index: u64,
+    ) -> ManagedVec<Compensation<Self::Api>> {
+        let compensations = self
+            .compensations()
+            .into_iter()
+            .skip(start_index as usize)
+            .take((end_index - start_index + 1) as usize)
+            .map(|compensation_id| self.get_compensation(compensation_id))
+            .collect();
+
+        compensations
+    }
+
+    #[view(getAddressRefundForCompensation)]
+    fn get_address_compensation(
+        &self,
+        address: ManagedAddress,
         token_identifier: TokenIdentifier,
         nonce: u64,
-    ) -> Compensation<Self::Api> {
-        self.compensations(&token_identifier, nonce).get()
+    ) -> Option<(Compensation<Self::Api>, Option<Refund<Self::Api>>)> {
+        let compensation_id = self.compensations_ids().get_id((token_identifier, nonce));
+        if compensation_id == 0 {
+            None
+        } else {
+            let compensation = Compensation {
+                compensation_id,
+                token_identifier: self.compensation_token_identifer(compensation_id).get(),
+                nonce: self.compensation_nonce(compensation_id).get(),
+                accumulated_amount: self.compensation_accumulated_amount(compensation_id).get(),
+                proof_amount: self.compensation_proof_amount(compensation_id).get(),
+                end_date: self.compensation_end_date(compensation_id).get(),
+            };
+
+            let refund = self.address_refund(&address, compensation_id).get();
+
+            if self.address_refund(&address, compensation_id).is_empty() {
+                Some((compensation, None))
+            } else {
+                Some((compensation, Some(refund)))
+            }
+        }
     }
 
     #[view(getBondsByTokenIdentifierNonce)]
@@ -37,7 +108,7 @@ pub trait ViewsModule: storage::StorageModule {
             .into_iter()
             .filter_map(|value| {
                 let (token_identifier, nonce) = value.into_tuple();
-                let bond_id = self.object_to_id().get_id((token_identifier, nonce));
+                let bond_id = self.bonds_ids().get_id((token_identifier, nonce));
                 if bond_id != 0 {
                     Some(self.get_bond(bond_id))
                 } else {

@@ -36,12 +36,33 @@ pub struct Bond<M: ManagedTypeApi> {
 }
 
 #[derive(
-    TopEncode, TopDecode, NestedEncode, NestedDecode, TypeAbi, Clone, PartialEq, Eq, Debug,
+    TopEncode,
+    TopDecode,
+    NestedEncode,
+    NestedDecode,
+    TypeAbi,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    ManagedVecItem,
 )]
 pub struct Compensation<M: ManagedTypeApi> {
+    pub compensation_id: u64,
     pub token_identifier: TokenIdentifier<M>,
     pub nonce: u64,
-    pub total_compenstation_amount: BigUint<M>,
+    pub accumulated_amount: BigUint<M>,
+    pub proof_amount: BigUint<M>,
+    pub end_date: u64,
+}
+
+#[derive(
+    TopEncode, TopDecode, NestedEncode, NestedDecode, TypeAbi, Clone, PartialEq, Eq, Debug,
+)]
+pub struct Refund<M: ManagedTypeApi> {
+    pub address: ManagedAddress<M>,
+    pub proof_of_refund: EsdtTokenPayment<M>,
+    pub compensation_id: u64,
 }
 
 #[multiversx_sc::module]
@@ -74,13 +95,29 @@ pub trait StorageModule {
     #[storage_mapper("withdraw_penalty")]
     fn withdraw_penalty(&self) -> SingleValueMapper<u64>; // percentage
 
-    #[view(getCompensations)]
-    #[storage_mapper("compensations")]
-    fn compensations(
+    #[storage_mapper("compensation_token_identifer")]
+    fn compensation_token_identifer(
         &self,
-        token_identifier: &TokenIdentifier,
-        nonce: u64,
-    ) -> SingleValueMapper<Compensation<Self::Api>>;
+        compensation_id: u64,
+    ) -> SingleValueMapper<TokenIdentifier>;
+
+    #[storage_mapper("compensation_nonce")]
+    fn compensation_nonce(&self, compensation_id: u64) -> SingleValueMapper<u64>;
+
+    #[storage_mapper("compensation_accumulated_amount")]
+    fn compensation_accumulated_amount(&self, compensation_id: u64) -> SingleValueMapper<BigUint>;
+
+    #[storage_mapper("compensation_proof_amount")]
+    fn compensation_proof_amount(&self, compensation_id: u64) -> SingleValueMapper<BigUint>;
+
+    #[storage_mapper("compensation_end_date")]
+    fn compensation_end_date(&self, compensation_id: u64) -> SingleValueMapper<u64>;
+
+    #[storage_mapper("compensations_ids")]
+    fn compensations_ids(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
+
+    #[storage_mapper("compensations_ids")]
+    fn compensations(&self) -> UnorderedSetMapper<u64>;
 
     #[storage_mapper("bond_address")]
     fn bond_address(&self, bond_id: u64) -> SingleValueMapper<ManagedAddress>;
@@ -104,11 +141,21 @@ pub trait StorageModule {
     fn bond_amount(&self, bond_id: u64) -> SingleValueMapper<BigUint>;
 
     #[storage_mapper("token_identifier_nonce_to_id")]
-    fn object_to_id(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
+    fn bonds_ids(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
 
     #[storage_mapper("address_bonds")]
     fn address_bonds(&self, address: &ManagedAddress) -> UnorderedSetMapper<u64>;
 
     #[storage_mapper("bonds")]
     fn bonds(&self) -> UnorderedSetMapper<u64>;
+
+    #[storage_mapper("refund_whitelist")]
+    fn refund_whitelist(&self, compensation_id: u64) -> WhitelistMapper<ManagedAddress>;
+
+    #[storage_mapper("address_refund")]
+    fn address_refund(
+        &self,
+        address: &ManagedAddress,
+        compensation_id: u64,
+    ) -> SingleValueMapper<Refund<Self::Api>>;
 }
