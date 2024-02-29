@@ -14,6 +14,7 @@ use multiversx_sc::{
 use multiversx_sc_scenario::{
     api::StaticApi,
     managed_address, managed_biguint, managed_token_id,
+    num_bigint::BigUint,
     scenario_model::{Account, AddressValue, ScCallStep, ScDeployStep, ScQueryStep, SetStateStep},
     ContractInfo, ScenarioWorld,
 };
@@ -332,6 +333,59 @@ impl ContractState {
                 self.contract
                     .modify_bond(managed_token_id!(token_identifier), nonce),
             ),
+        );
+        self
+    }
+
+    fn mock_bond_storage(&mut self) -> &mut Self {
+        // trigger error not implemented
+        panic!("Error: Not implemented");
+    }
+
+    fn withdraw(&mut self, caller: &str, token_identifier: &[u8], nonce: u64) -> &mut Self {
+        self.world.sc_call(
+            ScCallStep::new().from(caller).call(
+                self.contract
+                    .withdraw(managed_token_id!(token_identifier), nonce),
+            ),
+        );
+        self
+    }
+
+    fn renew(&mut self, caller: &str, token_identifier: &[u8], nonce: u64) -> &mut Self {
+        self.world.sc_call(
+            ScCallStep::new().from(caller).call(
+                self.contract
+                    .renew(managed_token_id!(token_identifier), nonce),
+            ),
+        );
+        self
+    }
+
+    fn proof(
+        &mut self,
+        caller: &str,
+        payment_token_identifier: &[u8],
+        payment_token_nonce: u64,
+        payment_amount: BigUint,
+    ) -> &mut Self {
+        self.world
+            .sc_call(ScCallStep::new().from(caller).esdt_transfer(
+                payment_token_identifier,
+                payment_token_nonce,
+                payment_amount,
+            ));
+        self
+    }
+
+    fn claim_refund(&mut self, token_identifier: &[u8], nonce: u64) -> &mut Self {
+        self.world.sc_call(
+            ScCallStep::new()
+                .from(OWNER_BONDING_CONTRACT_ADDRESS_EXPR)
+                .call(
+                    self.contract
+                        .claim_refund(managed_token_id!(token_identifier), nonce),
+                ),
         );
         self
     }
