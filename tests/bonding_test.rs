@@ -15,7 +15,6 @@ use multiversx_sc_scenario::{
     api::StaticApi,
     managed_address, managed_biguint, managed_token_id,
     scenario_model::{Account, AddressValue, ScCallStep, ScDeployStep, ScQueryStep, SetStateStep},
-    testing_framework::ScCallMandos,
     ContractInfo, ScenarioWorld,
 };
 
@@ -138,19 +137,29 @@ impl ContractState {
         self
     }
 
-    fn pause_contract(&mut self, address: &str) -> &mut Self {
+    fn set_administrator(&mut self, caller: &str, administrator: Address) -> &mut Self {
+        self.world.sc_call(
+            ScCallStep::new().from(caller).call(
+                self.contract
+                    .set_administrator(managed_address!(&administrator)),
+            ),
+        );
+        self
+    }
+
+    fn pause_contract(&mut self, caller: &str) -> &mut Self {
         self.world.sc_call(
             ScCallStep::new()
-                .from(address)
+                .from(caller)
                 .call(self.contract.set_contract_state_inactive()),
         );
         self
     }
 
-    fn unpause_contract(&mut self, address: &str) -> &mut Self {
+    fn unpause_contract(&mut self, caller: &str) -> &mut Self {
         self.world.sc_call(
             ScCallStep::new()
-                .from(address)
+                .from(caller)
                 .call(self.contract.set_contract_state_active()),
         );
         self
