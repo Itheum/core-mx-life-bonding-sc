@@ -29,10 +29,11 @@ pub struct Bond<M: ManagedTypeApi> {
     pub address: ManagedAddress<M>,
     pub token_identifier: TokenIdentifier<M>,
     pub nonce: u64,
-    pub lock_period: u64, //seconds
+    pub lock_period: u64,
     pub bond_timestamp: u64,
     pub unbound_timestamp: u64,
     pub bond_amount: BigUint<M>,
+    pub remaining_amount: BigUint<M>,
 }
 
 #[derive(
@@ -139,6 +140,9 @@ pub trait StorageModule {
 
     #[storage_mapper("bond_amount")]
     fn bond_amount(&self, bond_id: u64) -> SingleValueMapper<BigUint>;
+
+    #[storage_mapper("remaining_amount")]
+    fn remaining_amount(&self, bond_id: u64) -> SingleValueMapper<BigUint>;
 
     #[storage_mapper("token_identifier_nonce_to_id")]
     fn bonds_ids(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;

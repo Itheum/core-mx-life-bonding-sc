@@ -9,7 +9,7 @@ use crate::{
         ERR_CONTRACT_INACTIVE, ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS,
         ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD,
         ERR_INVALID_PAYMENT, ERR_INVALID_TIMELINE_TO_PROOF, ERR_INVALID_TIMELINE_TO_REFUND,
-        ERR_INVALID_TOKEN_IDENTIFIER, ERR_REFUND_NOT_FOUND,
+        ERR_INVALID_TOKEN_IDENTIFIER, ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND,
     },
     storage::Refund,
 };
@@ -106,7 +106,8 @@ pub trait LifeBondingContract:
         self.bond_lock_period(bond_id).set(lock_period);
         self.bond_timestamp(bond_id).set(current_timestamp);
         self.unbound_timestamp(bond_id).set(unbound_timestamp);
-        self.bond_amount(bond_id).set(payment.amount);
+        self.bond_amount(bond_id).set(payment.amount.clone());
+        self.remaining_amount(bond_id).set(payment.amount);
 
         self.address_bonds(&original_caller).insert(bond_id);
         self.bonds().insert(bond_id);
@@ -141,10 +142,16 @@ pub trait LifeBondingContract:
 
         let current_timestamp = self.blockchain().get_block_timestamp();
 
+        let mut compensation_cache = CompensationCache::new(self, compensation_id);
+
         if bond_cache.unbound_timestamp >= current_timestamp {
             let penalty_amount = &bond_cache.bond_amount
                 * &BigUint::from(self.withdraw_penalty().get())
                 / &BigUint::from(10_000u64);
+
+            if penalty_amount < compensation_cache.accumulated_amount {
+                sc_panic!(ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT);
+            }
 
             self.send().direct_esdt(
                 &caller,
@@ -152,8 +159,6 @@ pub trait LifeBondingContract:
                 0u64,
                 &(&bond_cache.bond_amount - &penalty_amount),
             );
-
-            let mut compensation_cache = CompensationCache::new(self, compensation_id);
 
             compensation_cache.accumulated_amount += &penalty_amount;
         } else {

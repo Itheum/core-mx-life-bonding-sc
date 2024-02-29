@@ -14,6 +14,7 @@ where
     pub bond_timestamp: u64,
     pub unbound_timestamp: u64,
     pub bond_amount: BigUint<C::Api>,
+    pub remaining_amount: BigUint<C::Api>,
 }
 
 impl<'a, C> BondCache<'a, C>
@@ -31,6 +32,7 @@ where
             bond_timestamp: sc_ref.bond_timestamp(bond_id).get(),
             unbound_timestamp: sc_ref.unbound_timestamp(bond_id).get(),
             bond_amount: sc_ref.bond_amount(bond_id).get(),
+            remaining_amount: sc_ref.bond_amount(bond_id).get(),
         }
     }
 
@@ -42,6 +44,7 @@ where
         self.sc_ref.bond_timestamp(self.bond_id).clear();
         self.sc_ref.unbound_timestamp(self.bond_id).clear();
         self.sc_ref.bond_amount(self.bond_id).clear();
+        self.sc_ref.remaining_amount(self.bond_id).clear();
     }
 }
 
@@ -60,5 +63,8 @@ where
             .unbound_timestamp(self.bond_id)
             .set(&self.unbound_timestamp);
         self.sc_ref.bond_amount(self.bond_id).set(&self.bond_amount);
+        self.sc_ref
+            .remaining_amount(self.bond_id)
+            .set(&self.remaining_amount);
     }
 }

@@ -68,7 +68,7 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
             PenaltyType::Custom => {
                 if let Some(custom_value) = custom_penalty.into_option() {
                     require!(
-                        custom_value <= 10_000 && custom_value > 0,
+                        custom_value <= 10_000 && custom_value > self.minimum_penalty().get(),
                         ERR_INVALID_PENALTY_VALUE
                     );
                     custom_value
@@ -82,9 +82,14 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         let penalty_amount =
             &bond_cache.bond_amount * &BigUint::from(penalty) / &BigUint::from(10_000u64);
 
-        bond_cache.bond_amount -= &penalty_amount;
+        require!(
+            bond_cache.remaining_amount >= penalty_amount,
+            ERR_INVALID_PENALTY_VALUE
+        );
 
-        compensation_cache.accumulated_amount += &penalty_amount; // Update total compensation amount
+        bond_cache.remaining_amount -= &penalty_amount;
+
+        compensation_cache.accumulated_amount += &penalty_amount;
     }
 
     #[endpoint(modifyBond)]

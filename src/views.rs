@@ -16,6 +16,7 @@ pub trait ViewsModule: storage::StorageModule {
             bond_timestamp: self.bond_timestamp(bond_id).get(),
             unbound_timestamp: self.unbound_timestamp(bond_id).get(),
             bond_amount: self.bond_amount(bond_id).get(),
+            remaining_amount: self.remaining_amount(bond_id).get(),
         }
     }
 
