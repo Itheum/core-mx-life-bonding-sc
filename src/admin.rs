@@ -18,6 +18,33 @@ multiversx_sc::derive_imports!();
 
 #[multiversx_sc::module]
 pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
+    #[endpoint(addToBlackList)]
+    fn add_to_black_list(
+        &self,
+        compensation_id: u64,
+        addresses: MultiValueEncoded<ManagedAddress>,
+    ) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+
+        for address in addresses.into_iter() {
+            self.compensation_blacklist(compensation_id).insert(address);
+        }
+    }
+
+    #[endpoint(removeFromBlackList)]
+    fn remove_from_black_list(
+        &self,
+        compensation_id: u64,
+        addresses: MultiValueEncoded<ManagedAddress>,
+    ) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+
+        for address in addresses.into_iter() {
+            self.compensation_blacklist(compensation_id)
+                .swap_remove(&address);
+        }
+    }
+
     #[endpoint(initiateRefund)]
     fn initiate_refund(&self, token_identifier: TokenIdentifier, nonce: u64, timestamp: u64) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);

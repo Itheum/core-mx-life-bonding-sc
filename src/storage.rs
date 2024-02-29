@@ -114,6 +114,10 @@ pub trait StorageModule {
     #[storage_mapper("compensation_end_date")]
     fn compensation_end_date(&self, compensation_id: u64) -> SingleValueMapper<u64>;
 
+    #[view(getCompensationBlacklist)]
+    #[storage_mapper("refund_blacklist")]
+    fn compensation_blacklist(&self, compensation_id: u64) -> UnorderedSetMapper<ManagedAddress>;
+
     // do not use view annotation
     #[storage_mapper("compensations_ids")]
     fn compensations_ids(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
@@ -154,9 +158,6 @@ pub trait StorageModule {
 
     #[storage_mapper("bonds")]
     fn bonds(&self) -> UnorderedSetMapper<u64>;
-
-    #[storage_mapper("refund_whitelist")]
-    fn refund_whitelist(&self, compensation_id: u64) -> WhitelistMapper<ManagedAddress>;
 
     #[storage_mapper("address_refund")]
     fn address_refund(

@@ -3,6 +3,7 @@
 use config::State;
 
 use crate::{
+    config::COMPENSATION_SAFE_PERIOD,
     contexts::{bond_cache::BondCache, compensation_cache::CompensationCache},
     errors::{
         ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_COMPENSATION_NOT_FOUND,
@@ -229,11 +230,9 @@ pub trait LifeBondingContract:
         let current_timestamp = self.blockchain().get_block_timestamp();
 
         require!(
-            current_timestamp < compensation_cache.end_date,
+            current_timestamp > compensation_cache.end_date,
             ERR_INVALID_TIMELINE_TO_PROOF
         );
-
-        self.refund_whitelist(compensation_id).add(&caller);
 
         compensation_cache.proof_amount += &payment.amount;
 
@@ -252,9 +251,6 @@ pub trait LifeBondingContract:
 
         let compensation_id = self.compensations_ids().get_id((token_identifier, nonce));
 
-        self.refund_whitelist(compensation_id)
-            .require_whitelisted(&caller);
-
         require!(
             self.compensations_ids().contains_id(compensation_id),
             ERR_COMPENSATION_NOT_FOUND
@@ -264,7 +260,7 @@ pub trait LifeBondingContract:
         let current_timestamp = self.blockchain().get_block_timestamp();
 
         require!(
-            current_timestamp > compensation_cache.end_date,
+            current_timestamp < compensation_cache.end_date + COMPENSATION_SAFE_PERIOD, // 86_400 seconds safe period for black list to be uploaded
             ERR_INVALID_TIMELINE_TO_REFUND
         );
 
@@ -273,31 +269,59 @@ pub trait LifeBondingContract:
             ERR_REFUND_NOT_FOUND
         );
 
-        let refund = self.address_refund(&caller, compensation_id).get();
+        if self
+            .compensation_blacklist(compensation_id)
+            .contains(&caller)
+        {
+            let address_refund = self.address_refund(&caller, compensation_id).get();
 
-        let compensation_per_token =
-            &compensation_cache.accumulated_amount / &compensation_cache.proof_amount;
+            self.send()
+                .direct_non_zero_esdt_payment(&caller, &address_refund.proof_of_refund); // sending back the nfts
 
-        let refund_amount = &refund.proof_of_refund.amount * &compensation_per_token;
+            compensation_cache.proof_amount -= &address_refund.proof_of_refund.amount;
+            self.compensation_blacklist(compensation_id)
+                .swap_remove(&caller);
+            self.address_refund(&caller, compensation_id).clear();
+        } else {
+            let mut sum_of_blacklist_refunds = BigUint::zero();
 
-        compensation_cache.accumulated_amount -= &refund_amount;
-        compensation_cache.proof_amount -= &refund.proof_of_refund.amount;
+            for address in self.compensation_blacklist(compensation_id).into_iter() {
+                if self.address_refund(&address, compensation_id).is_empty() {
+                    sum_of_blacklist_refunds += BigUint::zero();
+                } else {
+                    sum_of_blacklist_refunds += self
+                        .address_refund(&address, compensation_id)
+                        .get()
+                        .proof_of_refund
+                        .amount;
+                }
+            }
 
-        let mut payments = ManagedVec::new();
+            let refund = self.address_refund(&caller, compensation_id).get();
 
-        payments.push(refund.proof_of_refund.clone());
-        payments.push(EsdtTokenPayment::new(
-            self.bond_payment_token().get(),
-            0u64,
-            refund_amount,
-        ));
+            let compensation_per_token = &compensation_cache.accumulated_amount
+                / &(&compensation_cache.proof_amount - &sum_of_blacklist_refunds);
 
-        self.send().direct_multi(&caller, &payments);
+            let refund_amount = &refund.proof_of_refund.amount * &compensation_per_token;
 
-        self.address_refund(&caller, compensation_id).clear();
-        self.refund_whitelist(compensation_id).remove(&caller);
+            compensation_cache.accumulated_amount -= &refund_amount;
+            compensation_cache.proof_amount -= &refund.proof_of_refund.amount;
 
-        if compensation_cache.accumulated_amount == BigUint::zero()
+            let mut payments = ManagedVec::new();
+
+            payments.push(refund.proof_of_refund.clone());
+            payments.push(EsdtTokenPayment::new(
+                self.bond_payment_token().get(),
+                0u64,
+                refund_amount,
+            ));
+
+            self.send().direct_multi(&caller, &payments);
+
+            self.address_refund(&caller, compensation_id).clear();
+        }
+
+        if compensation_cache.accumulated_amount == BigUint::zero() // remove compensation if there is no more accumulated amount
             && compensation_cache.proof_amount == BigUint::zero()
         {
             self.compensations().swap_remove(&compensation_id);
