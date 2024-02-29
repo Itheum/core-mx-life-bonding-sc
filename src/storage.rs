@@ -114,6 +114,7 @@ pub trait StorageModule {
     #[storage_mapper("compensation_end_date")]
     fn compensation_end_date(&self, compensation_id: u64) -> SingleValueMapper<u64>;
 
+    // do not use view annotation
     #[storage_mapper("compensations_ids")]
     fn compensations_ids(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
 
@@ -144,7 +145,8 @@ pub trait StorageModule {
     #[storage_mapper("remaining_amount")]
     fn remaining_amount(&self, bond_id: u64) -> SingleValueMapper<BigUint>;
 
-    #[storage_mapper("token_identifier_nonce_to_id")]
+    // do not use view annotation
+    #[storage_mapper("bonds_ids")]
     fn bonds_ids(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
 
     #[storage_mapper("address_bonds")]
