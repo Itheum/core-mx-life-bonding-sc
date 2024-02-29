@@ -18,7 +18,7 @@ multiversx_sc::derive_imports!();
 
 #[multiversx_sc::module]
 pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
-    #[endpoint(addToBlackList)]
+    #[endpoint(setBlacklist)]
     fn add_to_black_list(
         &self,
         compensation_id: u64,
@@ -31,7 +31,7 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         }
     }
 
-    #[endpoint(removeFromBlackList)]
+    #[endpoint(removeBlacklist)]
     fn remove_from_black_list(
         &self,
         compensation_id: u64,

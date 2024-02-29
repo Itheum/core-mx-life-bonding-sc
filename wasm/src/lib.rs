@@ -46,8 +46,8 @@ multiversx_sc_wasm_adapter::endpoints! {
         getPagedBonds => get_paged_bonds
         getBondsLen => get_bonds_len
         getLockPeriodsBonds => get_lock_periods_bonds
-        addToBlackList => add_to_black_list
-        removeFromBlackList => remove_from_black_list
+        setBlacklist => add_to_black_list
+        removeBlacklist => remove_from_black_list
         initiateRefund => initiate_refund
         sanction => sanction
         modifyBond => modify_bond
