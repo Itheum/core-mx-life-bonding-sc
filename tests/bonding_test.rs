@@ -15,11 +15,13 @@ use multiversx_sc_scenario::{
     api::StaticApi,
     managed_address, managed_biguint, managed_token_id,
     num_bigint::BigUint,
-    scenario_model::{Account, AddressValue, ScCallStep, ScDeployStep, ScQueryStep, SetStateStep},
+    scenario_model::{
+        Account, AddressValue, ScCallStep, ScDeployStep, ScQueryStep, SetStateStep, TxExpect,
+    },
     ContractInfo, ScenarioWorld,
 };
 
-const BONDING_CONTRACT_PATH: &str = "mxsc:output/core-mx-life-bonding-sc.mxsc.json";
+const BONDING_CONTRACT_PATH: &str = "mxsc:output/core-mx-life-bonding-sc.msxc.json";
 const BONDING_CONTRACT_ADDRESS_EXPR: &str = "sc:core-mx-life-bonding-sc";
 
 const OWNER_BONDING_CONTRACT_ADDRESS_EXPR: &str = "address:owner";
@@ -40,10 +42,10 @@ type Contract = ContractInfo<core_mx_life_bonding_sc::Proxy<StaticApi>>;
 
 fn world() -> ScenarioWorld {
     let mut blockchain = ScenarioWorld::new();
-    blockchain.set_current_dir_from_workspace("..");
+    blockchain.set_current_dir_from_workspace("");
 
     blockchain.register_contract(
-        BONDING_CONTRACT_ADDRESS_EXPR,
+        BONDING_CONTRACT_PATH,
         core_mx_life_bonding_sc::ContractBuilder,
     );
     blockchain
@@ -131,37 +133,50 @@ impl ContractState {
 
         self.world.sc_deploy(
             ScDeployStep::new()
-                .from(BONDING_CONTRACT_ADDRESS_EXPR)
+                .from(OWNER_BONDING_CONTRACT_ADDRESS_EXPR)
                 .code(bonding_contract_code)
                 .call(self.contract.init()),
         );
         self
     }
 
-    fn set_administrator(&mut self, caller: &str, administrator: Address) -> &mut Self {
+    fn set_administrator(
+        &mut self,
+        caller: &str,
+        administrator: Address,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         self.world.sc_call(
-            ScCallStep::new().from(caller).call(
-                self.contract
-                    .set_administrator(managed_address!(&administrator)),
-            ),
+            ScCallStep::new()
+                .from(caller)
+                .call(
+                    self.contract
+                        .set_administrator(managed_address!(&administrator)),
+                )
+                .expect(tx_expect),
         );
         self
     }
 
-    fn pause_contract(&mut self, caller: &str) -> &mut Self {
+    fn pause_contract(&mut self, caller: &str, expect: Option<TxExpect>) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
-                .call(self.contract.set_contract_state_inactive()),
+                .call(self.contract.set_contract_state_inactive())
+                .expect(tx_expect),
         );
         self
     }
 
-    fn unpause_contract(&mut self, caller: &str) -> &mut Self {
+    fn unpause_contract(&mut self, caller: &str, expect: Option<TxExpect>) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
-                .call(self.contract.set_contract_state_active()),
+                .call(self.contract.set_contract_state_active())
+                .expect(tx_expect),
         );
         self
     }
@@ -175,7 +190,13 @@ impl ContractState {
         self
     }
 
-    fn set_accepted_caller(&mut self, caller: &str, address: Address) -> &mut Self {
+    fn set_accepted_caller(
+        &mut self,
+        caller: &str,
+        address: Address,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         let mut arg = MultiValueEncoded::new();
 
         arg.push(managed_address!(&address));
@@ -183,19 +204,28 @@ impl ContractState {
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
-                .call(self.contract.set_accepted_callers(arg)),
+                .call(self.contract.set_accepted_callers(arg))
+                .expect(tx_expect),
         );
         self
     }
 
-    fn set_blacklist(&mut self, caller: &str, compensation_id: u64, address: Address) -> &mut Self {
+    fn set_blacklist(
+        &mut self,
+        caller: &str,
+        compensation_id: u64,
+        address: Address,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         let mut arg = MultiValueEncoded::new();
         arg.push(managed_address!(&address));
 
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
-                .call(self.contract.add_to_black_list(compensation_id, arg)),
+                .call(self.contract.add_to_black_list(compensation_id, arg))
+                .expect(tx_expect),
         );
         self
     }
@@ -389,4 +419,31 @@ impl ContractState {
         );
         self
     }
+}
+
+#[test]
+fn deploy_and_pause() {
+    let mut state = ContractState::new();
+    let admin = state.admin.clone();
+    state
+        .deploy()
+        .set_administrator(
+            OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+            admin,
+            Some(TxExpect::ok()),
+        )
+        .pause_contract(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, Some(TxExpect::ok()));
+    state.check_contract_state(State::Inactive);
+
+    state.unpause_contract(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, Some(TxExpect::ok()));
+    state.check_contract_state(State::Active);
+
+    state.pause_contract(
+        FIRST_USER_ADDRESS_EXPR,
+        Some(TxExpect::user_error("str:Not privileged")),
+    );
+
+    state.pause_contract(ADMIN_BONDING_CONTRACT_ADDRESS_EXPR, Some(TxExpect::ok()));
+
+    state.check_contract_state(State::Inactive);
 }
