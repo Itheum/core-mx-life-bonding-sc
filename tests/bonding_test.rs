@@ -14,6 +14,7 @@ use multiversx_sc::{
 use multiversx_sc_scenario::{
     api::StaticApi,
     managed_address, managed_biguint, managed_token_id,
+    multiversx_chain_vm::tx_execution,
     num_bigint::BigUint,
     scenario_model::{
         Account, AddressValue, ScCallStep, ScDeployStep, ScQueryStep, SetStateStep, TxExpect,
@@ -235,19 +236,28 @@ impl ContractState {
         caller: &str,
         compensation_id: u64,
         address: Address,
+        expect: Option<TxExpect>,
     ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         let mut arg = MultiValueEncoded::new();
         arg.push(managed_address!(&address));
 
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
-                .call(self.contract.remove_from_black_list(compensation_id, arg)),
+                .call(self.contract.remove_from_black_list(compensation_id, arg))
+                .expect(tx_expect),
         );
         self
     }
 
-    fn remove_accepted_caller(&mut self, caller: &str, address: Address) -> &mut Self {
+    fn remove_accepted_caller(
+        &mut self,
+        caller: &str,
+        address: Address,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         let mut arg = MultiValueEncoded::new();
 
         arg.push(managed_address!(&address));
@@ -255,67 +265,113 @@ impl ContractState {
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
-                .call(self.contract.remove_accepted_callers(arg)),
+                .call(self.contract.remove_accepted_callers(arg))
+                .expect(tx_expect),
         );
         self
     }
 
-    fn set_bond_token(&mut self, caller: &str, token_identifier: &[u8]) -> &mut Self {
+    fn set_bond_token(
+        &mut self,
+        caller: &str,
+        token_identifier: &[u8],
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         self.world.sc_call(
-            ScCallStep::new().from(caller).call(
-                self.contract
-                    .set_bond_token(managed_token_id!(token_identifier)),
-            ),
+            ScCallStep::new()
+                .from(caller)
+                .call(
+                    self.contract
+                        .set_bond_token(managed_token_id!(token_identifier)),
+                )
+                .expect(tx_expect),
         );
         self
     }
 
-    fn set_lock_period_and_bond(&mut self, caller: &str, lock_period: u64, bond: u64) -> &mut Self {
+    fn set_lock_period_and_bond(
+        &mut self,
+        caller: &str,
+        lock_period: u64,
+        bond: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         let mut arg = MultiValueEncoded::new();
         arg.push(MultiValue2((lock_period, managed_biguint!(bond))));
 
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
-                .call(self.contract.set_lock_periods_with_bonds(arg)),
+                .call(self.contract.set_lock_periods_with_bonds(arg))
+                .expect(tx_expect),
         );
         self
     }
 
-    fn remove_lock_period_and_bond(&mut self, caller: &str, lock_period: u64) -> &mut Self {
+    fn remove_lock_period_and_bond(
+        &mut self,
+        caller: &str,
+        lock_period: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         let mut arg = MultiValueEncoded::new();
         arg.push(lock_period);
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
-                .call(self.contract.remove_lock_periods_with_bonds(arg)),
+                .call(self.contract.remove_lock_periods_with_bonds(arg))
+                .expect(tx_expect),
         );
         self
     }
 
-    fn set_minimum_penalty(&mut self, caller: &str, minimum_penalty: u64) -> &mut Self {
+    fn set_minimum_penalty(
+        &mut self,
+        caller: &str,
+        minimum_penalty: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
-                .call(self.contract.set_minimum_penalty(minimum_penalty)),
+                .call(self.contract.set_minimum_penalty(minimum_penalty))
+                .expect(tx_expect),
         );
         self
     }
 
-    fn set_maximum_penalty(&mut self, caller: &str, maximum_penalty: u64) -> &mut Self {
+    fn set_maximum_penalty(
+        &mut self,
+        caller: &str,
+        maximum_penalty: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
-                .call(self.contract.set_maximum_penalty(maximum_penalty)),
+                .call(self.contract.set_maximum_penalty(maximum_penalty))
+                .expect(tx_expect),
         );
         self
     }
 
-    fn set_withdraw_penalty(&mut self, caller: &str, withdraw_penalty: u64) -> &mut Self {
+    fn set_withdraw_penalty(
+        &mut self,
+        caller: &str,
+        withdraw_penalty: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
-                .call(self.contract.set_withdraw_penalty(withdraw_penalty)),
+                .call(self.contract.set_withdraw_penalty(withdraw_penalty))
+                .expect(tx_expect),
         );
         self
     }
@@ -326,7 +382,9 @@ impl ContractState {
         token_identifier: &[u8],
         nonce: u64,
         end_timestamp: u64,
+        expect: Option<TxExpect>,
     ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
@@ -334,7 +392,8 @@ impl ContractState {
                     managed_token_id!(token_identifier),
                     nonce,
                     end_timestamp,
-                )),
+                ))
+                .expect(tx_expect),
         );
         self
     }
@@ -346,23 +405,38 @@ impl ContractState {
         nonce: u64,
         penalty: PenaltyType,
         custom_penalty: OptionalValue<u64>,
+        expect: Option<TxExpect>,
     ) -> &mut Self {
-        self.world
-            .sc_call(ScCallStep::new().from(caller).call(self.contract.sanction(
-                managed_token_id!(token_identifier),
-                nonce,
-                penalty,
-                custom_penalty,
-            )));
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
+        self.world.sc_call(
+            ScCallStep::new()
+                .from(caller)
+                .call(self.contract.sanction(
+                    managed_token_id!(token_identifier),
+                    nonce,
+                    penalty,
+                    custom_penalty,
+                ))
+                .expect(tx_expect),
+        );
         self
     }
 
-    fn modify_bond(&mut self, caller: &str, token_identifier: &[u8], nonce: u64) -> &mut Self {
+    fn modify_bond(
+        &mut self,
+        caller: &str,
+        token_identifier: &[u8],
+        nonce: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
         self.world.sc_call(
-            ScCallStep::new().from(caller).call(
-                self.contract
-                    .modify_bond(managed_token_id!(token_identifier), nonce),
-            ),
+            ScCallStep::new()
+                .from(caller)
+                .call(
+                    self.contract
+                        .modify_bond(managed_token_id!(token_identifier), nonce),
+                )
+                .expect(expect.unwrap_or(TxExpect::ok())),
         );
         self
     }
@@ -372,22 +446,40 @@ impl ContractState {
         panic!("Error: Not implemented");
     }
 
-    fn withdraw(&mut self, caller: &str, token_identifier: &[u8], nonce: u64) -> &mut Self {
+    fn withdraw(
+        &mut self,
+        caller: &str,
+        token_identifier: &[u8],
+        nonce: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
         self.world.sc_call(
-            ScCallStep::new().from(caller).call(
-                self.contract
-                    .withdraw(managed_token_id!(token_identifier), nonce),
-            ),
+            ScCallStep::new()
+                .from(caller)
+                .call(
+                    self.contract
+                        .withdraw(managed_token_id!(token_identifier), nonce),
+                )
+                .expect(expect.unwrap_or(TxExpect::ok())),
         );
         self
     }
 
-    fn renew(&mut self, caller: &str, token_identifier: &[u8], nonce: u64) -> &mut Self {
+    fn renew(
+        &mut self,
+        caller: &str,
+        token_identifier: &[u8],
+        nonce: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
         self.world.sc_call(
-            ScCallStep::new().from(caller).call(
-                self.contract
-                    .renew(managed_token_id!(token_identifier), nonce),
-            ),
+            ScCallStep::new()
+                .from(caller)
+                .call(
+                    self.contract
+                        .renew(managed_token_id!(token_identifier), nonce),
+                )
+                .expect(expect.unwrap_or(TxExpect::ok())),
         );
         self
     }
@@ -398,24 +490,35 @@ impl ContractState {
         payment_token_identifier: &[u8],
         payment_token_nonce: u64,
         payment_amount: BigUint,
+        expect: Option<TxExpect>,
     ) -> &mut Self {
-        self.world
-            .sc_call(ScCallStep::new().from(caller).esdt_transfer(
-                payment_token_identifier,
-                payment_token_nonce,
-                payment_amount,
-            ));
+        self.world.sc_call(
+            ScCallStep::new()
+                .from(caller)
+                .esdt_transfer(
+                    payment_token_identifier,
+                    payment_token_nonce,
+                    payment_amount,
+                )
+                .expect(expect.unwrap_or(TxExpect::ok())),
+        );
         self
     }
 
-    fn claim_refund(&mut self, token_identifier: &[u8], nonce: u64) -> &mut Self {
+    fn claim_refund(
+        &mut self,
+        token_identifier: &[u8],
+        nonce: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
         self.world.sc_call(
             ScCallStep::new()
                 .from(OWNER_BONDING_CONTRACT_ADDRESS_EXPR)
                 .call(
                     self.contract
                         .claim_refund(managed_token_id!(token_identifier), nonce),
-                ),
+                )
+                .expect(expect.unwrap_or(TxExpect::ok())),
         );
         self
     }
