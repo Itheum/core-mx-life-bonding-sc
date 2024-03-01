@@ -4,11 +4,9 @@ use multiversx_sc::{
     api::{ErrorApiImpl, StorageMapperApi},
     codec::{NestedDecode, NestedEncode, TopDecode, TopEncode},
     storage::{mappers::StorageMapper, StorageKey},
-    storage_clear, storage_set,
+    storage_clear, storage_get, storage_get_len, storage_set,
     types::ManagedType,
 };
-
-use super::storage_address::{CurrentStorage, StorageAddress};
 
 static ID_SUFFIX: &[u8] = b"id";
 static OBJECT_SUFFIX: &[u8] = b"object";
@@ -17,19 +15,17 @@ static LAST_ID_SUFFIX: &[u8] = b"lastId";
 pub type Id = u64;
 pub const NULL_ID: Id = 0;
 
-pub struct ObjectToIdMapper<SA, T, A = CurrentStorage>
+pub struct ObjectToIdMapper<SA, T>
 where
     SA: StorageMapperApi,
-    A: StorageAddress<SA>,
     T: TopEncode + TopDecode + NestedEncode + NestedDecode + 'static,
 {
     _phantom_api: PhantomData<SA>,
     _phantom_item: PhantomData<T>,
-    address: A,
     base_key: StorageKey<SA>,
 }
 
-impl<SA, T> StorageMapper<SA> for ObjectToIdMapper<SA, T, CurrentStorage>
+impl<SA, T> StorageMapper<SA> for ObjectToIdMapper<SA, T>
 where
     SA: StorageMapperApi,
     T: TopEncode + TopDecode + NestedEncode + NestedDecode,
@@ -39,21 +35,19 @@ where
         ObjectToIdMapper {
             _phantom_api: PhantomData,
             _phantom_item: PhantomData,
-            address: CurrentStorage,
             base_key,
         }
     }
 }
 
-impl<SA, T, A> ObjectToIdMapper<SA, T, A>
+impl<SA, T> ObjectToIdMapper<SA, T>
 where
     SA: StorageMapperApi,
-    A: StorageAddress<SA>,
     T: TopEncode + TopDecode + NestedEncode + NestedDecode,
 {
     pub fn contains_id(&self, id: Id) -> bool {
         let key = self.id_to_object_key(id);
-        self.address.address_storage_get_len(key.as_ref()) != 0
+        storage_get_len(key.as_ref()) != 0
     }
 
     pub fn get_id<BT>(&self, object: BT) -> Id
@@ -61,15 +55,15 @@ where
         BT: Borrow<T>,
     {
         let key = self.object_to_id_key(object);
-        self.address.address_storage_get(key.as_ref())
+        storage_get(key.as_ref())
     }
 
     pub fn get_object(&self, id: Id) -> Option<T> {
         let key = self.id_to_object_key(id);
-        if self.address.address_storage_get_len(key.as_ref()) == 0 {
+        if storage_get_len(key.as_ref()) == 0 {
             return None;
         }
-        let object = self.address.address_storage_get(key.as_ref());
+        let object = storage_get(key.as_ref());
         Some(object)
     }
 
@@ -100,20 +94,17 @@ where
     }
 
     pub fn get_last_id(&self) -> Id {
-        self.address
-            .address_storage_get(self.last_id_key().as_ref())
+        storage_get(self.last_id_key().as_ref())
     }
 }
 
-impl<SA, T> ObjectToIdMapper<SA, T, CurrentStorage>
+impl<SA, T> ObjectToIdMapper<SA, T>
 where
     SA: StorageMapperApi,
     T: TopEncode + TopDecode + NestedEncode + NestedDecode,
 {
     pub fn get_id_or_insert(&self, object: T) -> Id {
-        let current_id = self
-            .address
-            .address_storage_get(self.object_to_id_key(&object).as_ref());
+        let current_id = storage_get(self.object_to_id_key(&object).as_ref());
         if current_id != 0 {
             return current_id;
         }
