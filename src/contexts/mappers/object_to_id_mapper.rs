@@ -10,6 +10,7 @@ use multiversx_sc::{
 
 static ID_SUFFIX: &[u8] = b"id";
 static OBJECT_SUFFIX: &[u8] = b"object";
+static UNKNOW_OBJECT_ERR_MSG: &[u8] = b"Unknown object";
 static LAST_ID_SUFFIX: &[u8] = b"lastId";
 
 pub type Id = u64;
@@ -56,6 +57,18 @@ where
     {
         let key = self.object_to_id_key(object);
         storage_get(key.as_ref())
+    }
+
+    pub fn get_id_non_zero<BT>(&self, object: BT) -> Id
+    where
+        BT: Borrow<T>,
+    {
+        let id = self.get_id(object);
+        if id == NULL_ID {
+            SA::error_api_impl().signal_error(UNKNOW_OBJECT_ERR_MSG);
+        }
+
+        id
     }
 
     pub fn get_object(&self, id: Id) -> Option<T> {

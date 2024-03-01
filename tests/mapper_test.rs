@@ -104,3 +104,20 @@ fn test_insert_new_error_handling() {
     let _same_id = mapper.get_id_or_insert((token_identifier.clone(), nonce));
     let _another_id = mapper.insert_new((token_identifier.clone(), nonce)); // This should panic
 }
+
+#[test]
+#[should_panic(expected = "Unknown object")]
+fn test_get_id_non_zero() {
+    let mapper: ObjectToIdMapper<SingleTxApi, (TokenIdentifier<SingleTxApi>, u64)> =
+        ObjectToIdMapper::new(StorageKey::new(b"object_to_id_mapper"));
+
+    let token_identifier = TokenIdentifier::<SingleTxApi>::from(TOKEN_IDENTIFIER);
+    let nonce = 3u64;
+
+    let id = mapper.get_id_or_insert((token_identifier.clone(), nonce));
+    let found_id = mapper.get_id_non_zero((token_identifier.clone(), nonce));
+
+    assert_eq!(id, found_id);
+
+    mapper.get_id_non_zero((token_identifier.clone(), 4u64)); // This should panic
+}

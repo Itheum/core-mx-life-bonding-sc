@@ -14,7 +14,6 @@ use multiversx_sc::{
 use multiversx_sc_scenario::{
     api::StaticApi,
     managed_address, managed_biguint, managed_token_id,
-    multiversx_chain_vm::tx_execution,
     num_bigint::BigUint,
     scenario_model::{
         Account, AddressValue, ScCallStep, ScDeployStep, ScQueryStep, SetStateStep, TxExpect,
