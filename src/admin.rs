@@ -5,9 +5,8 @@ use crate::{
         compensation_cache::{self, CompensationCache},
     },
     errors::{
-        ERR_BOND_NOT_FOUND, ERR_COMPENSATION_NOT_FOUND, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC,
-        ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP, ERR_INVALID_TOKEN_IDENTIFIER,
-        ERR_NOT_PRIVILEGED,
+        ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP,
+        ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
     },
     only_privileged,
     storage::{self, PenaltyType},
@@ -51,12 +50,7 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
 
         let compensation_id = self
             .compensations_ids()
-            .get_id((token_identifier.clone(), nonce));
-
-        require!(
-            self.compensations_ids().contains_id(compensation_id),
-            ERR_COMPENSATION_NOT_FOUND
-        );
+            .get_id_non_zero((token_identifier.clone(), nonce));
 
         let current_timestamp = self.blockchain().get_block_timestamp();
 
@@ -78,14 +72,12 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
     ) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
 
-        let bond_id = self.bonds_ids().get_id((token_identifier.clone(), nonce));
-        let compensation_id = self.compensations_ids().get_id((token_identifier, nonce));
-
-        require!(self.bonds_ids().contains_id(bond_id), ERR_BOND_NOT_FOUND);
-        require!(
-            self.compensations_ids().contains_id(compensation_id),
-            ERR_COMPENSATION_NOT_FOUND
-        );
+        let bond_id = self
+            .bonds_ids()
+            .get_id_non_zero((token_identifier.clone(), nonce));
+        let compensation_id = self
+            .compensations_ids()
+            .get_id_non_zero((token_identifier, nonce));
 
         let mut bond_cache = BondCache::new(self, bond_id);
         let mut compensation_cache = CompensationCache::new(self, compensation_id);
@@ -123,9 +115,7 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
     fn modify_bond(&self, token_identifier: TokenIdentifier, nonce: u64) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
 
-        let bond_id = self.bonds_ids().get_id_or_insert((token_identifier, nonce));
-
-        require!(self.bonds_ids().contains_id(bond_id), ERR_BOND_NOT_FOUND);
+        let bond_id = self.bonds_ids().get_id_non_zero((token_identifier, nonce));
 
         let mut bond_cache = BondCache::new(self, bond_id);
 

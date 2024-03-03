@@ -6,10 +6,10 @@ use crate::{
     config::COMPENSATION_SAFE_PERIOD,
     contexts::{bond_cache::BondCache, compensation_cache::CompensationCache},
     errors::{
-        ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_COMPENSATION_NOT_FOUND,
-        ERR_CONTRACT_INACTIVE, ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS,
-        ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD,
-        ERR_INVALID_PAYMENT, ERR_INVALID_TIMELINE_TO_PROOF, ERR_INVALID_TIMELINE_TO_REFUND,
+        ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_CONTRACT_INACTIVE,
+        ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC,
+        ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD, ERR_INVALID_PAYMENT,
+        ERR_INVALID_TIMELINE_TO_PROOF, ERR_INVALID_TIMELINE_TO_REFUND,
         ERR_INVALID_TOKEN_IDENTIFIER, ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND,
     },
     storage::Refund,
@@ -134,10 +134,12 @@ pub trait LifeBondingContract:
         require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();
 
-        let bond_id = self.bonds_ids().get_id((token_identifier.clone(), nonce));
-        let compensation_id = self.compensations_ids().get_id((token_identifier, nonce));
-
-        require!(self.bonds_ids().contains_id(bond_id), ERR_BOND_NOT_FOUND);
+        let bond_id = self
+            .bonds_ids()
+            .get_id_non_zero((token_identifier.clone(), nonce));
+        let compensation_id = self
+            .compensations_ids()
+            .get_id_non_zero((token_identifier, nonce));
 
         let mut bond_cache = BondCache::new(self, bond_id);
 
@@ -182,9 +184,7 @@ pub trait LifeBondingContract:
         require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         let caller = self.blockchain().get_caller();
 
-        let bond_id = self.bonds_ids().get_id_or_insert((token_identifier, nonce));
-
-        require!(self.bonds_ids().contains_id(bond_id), ERR_BOND_NOT_FOUND);
+        let bond_id = self.bonds_ids().get_id_non_zero((token_identifier, nonce));
 
         let mut bond_cache = BondCache::new(self, bond_id);
 
@@ -213,12 +213,7 @@ pub trait LifeBondingContract:
 
         let compensation_id = self
             .compensations_ids()
-            .get_id((payment.token_identifier.clone(), payment.token_nonce));
-
-        require!(
-            self.compensations_ids().contains_id(compensation_id),
-            ERR_COMPENSATION_NOT_FOUND
-        );
+            .get_id_non_zero((payment.token_identifier.clone(), payment.token_nonce));
 
         require!(
             token_type == EsdtTokenType::NonFungible,
@@ -249,12 +244,10 @@ pub trait LifeBondingContract:
     fn claim_refund(&self, token_identifier: TokenIdentifier, nonce: u64) {
         let caller = self.blockchain().get_caller();
 
-        let compensation_id = self.compensations_ids().get_id((token_identifier, nonce));
+        let compensation_id = self
+            .compensations_ids()
+            .get_id_non_zero((token_identifier, nonce));
 
-        require!(
-            self.compensations_ids().contains_id(compensation_id),
-            ERR_COMPENSATION_NOT_FOUND
-        );
         let mut compensation_cache = CompensationCache::new(self, compensation_id);
 
         let current_timestamp = self.blockchain().get_block_timestamp();
