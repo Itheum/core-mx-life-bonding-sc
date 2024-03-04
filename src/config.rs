@@ -1,3 +1,5 @@
+use crate::storage;
+
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
@@ -12,7 +14,7 @@ pub enum State {
 pub const COMPENSATION_SAFE_PERIOD: u64 = 86_400;
 
 #[multiversx_sc::module]
-pub trait ConfigModule {
+pub trait ConfigModule: storage::StorageModule {
     #[only_owner]
     #[endpoint(setAdministrator)]
     fn set_administrator(&self, administrator: ManagedAddress) {
@@ -37,8 +39,31 @@ pub trait ConfigModule {
         &(self.administrator().get()) == address
     }
 
+    #[inline]
     fn is_privileged(&self, address: &ManagedAddress) -> bool {
         self.is_contract_owner(address) || self.is_admin(address)
+    }
+
+    fn contract_is_ready(&self) -> bool {
+        let mut is_ready = true;
+
+        if !self.is_state_active(self.contract_state().get()) {
+            is_ready = false;
+        }
+
+        if self.administrator().is_empty() {
+            is_ready = false;
+        }
+        if self.accepted_callers().len() == 0 {
+            is_ready = false;
+        }
+        if self.bond_payment_token().is_empty() {
+            is_ready = false;
+        }
+        if self.lock_periods().len() == 0 {
+            is_ready = false;
+        }
+        is_ready
     }
 
     #[inline]

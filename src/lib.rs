@@ -6,7 +6,7 @@ use crate::{
     config::COMPENSATION_SAFE_PERIOD,
     contexts::{bond_cache::BondCache, compensation_cache::CompensationCache},
     errors::{
-        ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_CONTRACT_INACTIVE,
+        ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_CONTRACT_NOT_READY,
         ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS, ERR_INVALID_AMOUNT_SENT,
         ERR_INVALID_LOCK_PERIOD, ERR_INVALID_PAYMENT, ERR_INVALID_TIMELINE_TO_PROOF,
         ERR_INVALID_TIMELINE_TO_REFUND, ERR_INVALID_TOKEN_IDENTIFIER,
@@ -51,8 +51,8 @@ pub trait LifeBondingContract:
         nonce: u64,
         lock_period: u64, //seconds
     ) {
+        require_contract_ready!(self, ERR_CONTRACT_NOT_READY);
         let caller = self.blockchain().get_caller();
-        require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         require!(
             self.blockchain()
                 .is_smart_contract(&self.blockchain().get_caller())
@@ -130,7 +130,7 @@ pub trait LifeBondingContract:
 
     #[endpoint(withdraw)]
     fn withdraw(&self, token_identifier: TokenIdentifier, nonce: u64) {
-        require_contract_active!(self, ERR_CONTRACT_INACTIVE);
+        require_contract_ready!(self, ERR_CONTRACT_NOT_READY);
         let caller = self.blockchain().get_caller();
 
         let bond_id = self
@@ -180,7 +180,7 @@ pub trait LifeBondingContract:
 
     #[endpoint(renew)]
     fn renew(&self, token_identifier: TokenIdentifier, nonce: u64) {
-        require_contract_active!(self, ERR_CONTRACT_INACTIVE);
+        require_contract_ready!(self, ERR_CONTRACT_NOT_READY);
         let caller = self.blockchain().get_caller();
 
         let bond_id = self.bonds_ids().get_id_non_zero((token_identifier, nonce));
@@ -198,6 +198,7 @@ pub trait LifeBondingContract:
     #[payable("*")]
     #[endpoint(proof)]
     fn add_proof(&self) {
+        require_contract_ready!(self, ERR_CONTRACT_NOT_READY);
         let caller = self.blockchain().get_caller();
         let payment = self.call_value().single_esdt();
 
@@ -241,6 +242,7 @@ pub trait LifeBondingContract:
 
     #[endpoint(claimRefund)]
     fn claim_refund(&self, token_identifier: TokenIdentifier, nonce: u64) {
+        require_contract_ready!(self, ERR_CONTRACT_NOT_READY);
         let caller = self.blockchain().get_caller();
 
         let compensation_id = self

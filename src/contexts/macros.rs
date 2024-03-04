@@ -9,10 +9,9 @@ macro_rules! only_privileged {
 }
 
 #[macro_export]
-macro_rules! require_contract_active {
+macro_rules! require_contract_ready {
     ($trait_self: expr, $error_msg:expr) => {
-        let state = $trait_self.contract_state().get();
-        if !$trait_self.is_state_active(state) {
+        if !$trait_self.contract_is_ready() {
             sc_panic!($error_msg);
         }
     };
