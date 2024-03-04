@@ -21,26 +21,26 @@ use multiversx_sc_scenario::{
     ContractInfo, ScenarioWorld,
 };
 
-const BONDING_CONTRACT_PATH: &str = "mxsc:output/core-mx-life-bonding-sc.msxc.json";
-const BONDING_CONTRACT_ADDRESS_EXPR: &str = "sc:core-mx-life-bonding-sc";
+pub const BONDING_CONTRACT_PATH: &str = "mxsc:output/core-mx-life-bonding-sc.msxc.json";
+pub const BONDING_CONTRACT_ADDRESS_EXPR: &str = "sc:core-mx-life-bonding-sc";
 
-const OWNER_BONDING_CONTRACT_ADDRESS_EXPR: &str = "address:owner";
+pub const OWNER_BONDING_CONTRACT_ADDRESS_EXPR: &str = "address:owner";
 
-const ITHEUM_TOKEN_IDENTIFIER_EXPR: &str = "str:ITHEUM-12345";
-const ITHEUM_TOKEN_IDENTIFIER: &[u8] = b"ITHEUM-12345";
+pub const ITHEUM_TOKEN_IDENTIFIER_EXPR: &str = "str:ITHEUM-12345";
+pub const ITHEUM_TOKEN_IDENTIFIER: &[u8] = b"ITHEUM-12345";
 
-const DATA_NFT_IDENTIFIER_EXPR: &str = "str:DATANFT-12345";
-const DATA_NFT_IDENTIFIER: &[u8] = b"DATANFT-12345";
+pub const DATA_NFT_IDENTIFIER_EXPR: &str = "str:DATANFT-12345";
+pub const DATA_NFT_IDENTIFIER: &[u8] = b"DATANFT-12345";
 
-const ADMIN_BONDING_CONTRACT_ADDRESS_EXPR: &str = "address:admin";
+pub const ADMIN_BONDING_CONTRACT_ADDRESS_EXPR: &str = "address:admin";
 
-const FIRST_USER_ADDRESS_EXPR: &str = "address:first_user";
-const SECOND_USER_ADDRESS_EXPR: &str = "address:second_user";
-const THIRD_USER_ADDRESS_EXPR: &str = "address:third_user";
+pub const FIRST_USER_ADDRESS_EXPR: &str = "address:first_user";
+pub const SECOND_USER_ADDRESS_EXPR: &str = "address:second_user";
+pub const THIRD_USER_ADDRESS_EXPR: &str = "address:third_user";
 
 type Contract = ContractInfo<core_mx_life_bonding_sc::Proxy<StaticApi>>;
 
-fn world() -> ScenarioWorld {
+pub fn world() -> ScenarioWorld {
     let mut blockchain = ScenarioWorld::new();
     blockchain.set_current_dir_from_workspace("");
 
@@ -51,18 +51,18 @@ fn world() -> ScenarioWorld {
     blockchain
 }
 
-struct ContractState {
-    world: ScenarioWorld,
-    contract: Contract,
-    contract_owner: Address,
-    admin: Address,
-    first_user_address: Address,
-    second_user_address: Address,
-    third_user_address: Address,
+pub struct ContractState {
+    pub world: ScenarioWorld,
+    pub contract: Contract,
+    pub contract_owner: Address,
+    pub admin: Address,
+    pub first_user_address: Address,
+    pub second_user_address: Address,
+    pub third_user_address: Address,
 }
 
 impl ContractState {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut world = world();
 
         world.set_state_step(
@@ -128,7 +128,7 @@ impl ContractState {
         }
     }
 
-    fn deploy(&mut self) -> &mut Self {
+    pub fn deploy(&mut self) -> &mut Self {
         let bonding_contract_code = self.world.code_expression(BONDING_CONTRACT_PATH);
 
         self.world.sc_deploy(
@@ -140,7 +140,7 @@ impl ContractState {
         self
     }
 
-    fn set_administrator(
+    pub fn set_administrator(
         &mut self,
         caller: &str,
         administrator: Address,
@@ -159,7 +159,7 @@ impl ContractState {
         self
     }
 
-    fn pause_contract(&mut self, caller: &str, expect: Option<TxExpect>) -> &mut Self {
+    pub fn pause_contract(&mut self, caller: &str, expect: Option<TxExpect>) -> &mut Self {
         let tx_expect = expect.unwrap_or(TxExpect::ok());
         self.world.sc_call(
             ScCallStep::new()
@@ -170,7 +170,7 @@ impl ContractState {
         self
     }
 
-    fn unpause_contract(&mut self, caller: &str, expect: Option<TxExpect>) -> &mut Self {
+    pub fn unpause_contract(&mut self, caller: &str, expect: Option<TxExpect>) -> &mut Self {
         let tx_expect = expect.unwrap_or(TxExpect::ok());
         self.world.sc_call(
             ScCallStep::new()
@@ -181,7 +181,7 @@ impl ContractState {
         self
     }
 
-    fn check_contract_state(&mut self, contract_state: State) -> &mut Self {
+    pub fn check_contract_state(&mut self, contract_state: State) -> &mut Self {
         self.world.sc_query(
             ScQueryStep::new()
                 .call(self.contract.contract_state())
@@ -190,7 +190,7 @@ impl ContractState {
         self
     }
 
-    fn set_accepted_caller(
+    pub fn set_accepted_caller(
         &mut self,
         caller: &str,
         address: Address,
@@ -210,7 +210,7 @@ impl ContractState {
         self
     }
 
-    fn set_blacklist(
+    pub fn set_blacklist(
         &mut self,
         caller: &str,
         compensation_id: u64,
@@ -230,7 +230,7 @@ impl ContractState {
         self
     }
 
-    fn remove_blacklist(
+    pub fn remove_blacklist(
         &mut self,
         caller: &str,
         compensation_id: u64,
@@ -250,7 +250,7 @@ impl ContractState {
         self
     }
 
-    fn remove_accepted_caller(
+    pub fn remove_accepted_caller(
         &mut self,
         caller: &str,
         address: Address,
@@ -270,7 +270,7 @@ impl ContractState {
         self
     }
 
-    fn set_bond_token(
+    pub fn set_bond_token(
         &mut self,
         caller: &str,
         token_identifier: &[u8],
@@ -289,7 +289,7 @@ impl ContractState {
         self
     }
 
-    fn set_lock_period_and_bond(
+    pub fn set_lock_period_and_bond(
         &mut self,
         caller: &str,
         lock_period: u64,
@@ -309,7 +309,7 @@ impl ContractState {
         self
     }
 
-    fn remove_lock_period_and_bond(
+    pub fn remove_lock_period_and_bond(
         &mut self,
         caller: &str,
         lock_period: u64,
@@ -327,7 +327,7 @@ impl ContractState {
         self
     }
 
-    fn set_minimum_penalty(
+    pub fn set_minimum_penalty(
         &mut self,
         caller: &str,
         minimum_penalty: u64,
@@ -343,7 +343,7 @@ impl ContractState {
         self
     }
 
-    fn set_maximum_penalty(
+    pub fn set_maximum_penalty(
         &mut self,
         caller: &str,
         maximum_penalty: u64,
@@ -359,7 +359,7 @@ impl ContractState {
         self
     }
 
-    fn set_withdraw_penalty(
+    pub fn set_withdraw_penalty(
         &mut self,
         caller: &str,
         withdraw_penalty: u64,
@@ -375,7 +375,7 @@ impl ContractState {
         self
     }
 
-    fn initiate_refund(
+    pub fn initiate_refund(
         &mut self,
         caller: &str,
         token_identifier: &[u8],
@@ -397,7 +397,7 @@ impl ContractState {
         self
     }
 
-    fn sanction(
+    pub fn sanction(
         &mut self,
         caller: &str,
         token_identifier: &[u8],
@@ -421,7 +421,7 @@ impl ContractState {
         self
     }
 
-    fn modify_bond(
+    pub fn modify_bond(
         &mut self,
         caller: &str,
         token_identifier: &[u8],
@@ -440,12 +440,12 @@ impl ContractState {
         self
     }
 
-    fn mock_bond_storage(&mut self) -> &mut Self {
+    pub fn mock_bond_storage(&mut self) -> &mut Self {
         // trigger error not implemented
         panic!("Error: Not implemented");
     }
 
-    fn withdraw(
+    pub fn withdraw(
         &mut self,
         caller: &str,
         token_identifier: &[u8],
@@ -464,7 +464,7 @@ impl ContractState {
         self
     }
 
-    fn renew(
+    pub fn renew(
         &mut self,
         caller: &str,
         token_identifier: &[u8],
@@ -483,7 +483,7 @@ impl ContractState {
         self
     }
 
-    fn proof(
+    pub fn proof(
         &mut self,
         caller: &str,
         payment_token_identifier: &[u8],
@@ -504,7 +504,7 @@ impl ContractState {
         self
     }
 
-    fn claim_refund(
+    pub fn claim_refund(
         &mut self,
         token_identifier: &[u8],
         nonce: u64,
@@ -521,31 +521,4 @@ impl ContractState {
         );
         self
     }
-}
-
-#[test]
-fn deploy_and_pause() {
-    let mut state = ContractState::new();
-    let admin = state.admin.clone();
-    state
-        .deploy()
-        .set_administrator(
-            OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
-            admin,
-            Some(TxExpect::ok()),
-        )
-        .pause_contract(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, Some(TxExpect::ok()));
-    state.check_contract_state(State::Inactive);
-
-    state.unpause_contract(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, Some(TxExpect::ok()));
-    state.check_contract_state(State::Active);
-
-    state.pause_contract(
-        FIRST_USER_ADDRESS_EXPR,
-        Some(TxExpect::user_error("str:Not privileged")),
-    );
-
-    state.pause_contract(ADMIN_BONDING_CONTRACT_ADDRESS_EXPR, Some(TxExpect::ok()));
-
-    state.check_contract_state(State::Inactive);
 }

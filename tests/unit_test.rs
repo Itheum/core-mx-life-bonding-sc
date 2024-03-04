@@ -1,3 +1,6 @@
+mod bonding_state;
+mod endpoints;
+
 use core_mx_life_bonding_sc::{
     config::{ConfigModule, State},
     storage::StorageModule,
