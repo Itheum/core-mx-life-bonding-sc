@@ -5,8 +5,8 @@ use crate::{
         compensation_cache::{self, CompensationCache},
     },
     errors::{
-        ERR_ENDPOINT_CALLABLE_ONLY_BY_SC, ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP,
-        ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
+        ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP, ERR_INVALID_TOKEN_IDENTIFIER,
+        ERR_NOT_PRIVILEGED,
     },
     only_privileged,
     storage::{self, PenaltyType},
@@ -139,10 +139,6 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
     fn set_accepted_callers(&self, callers: MultiValueEncoded<ManagedAddress>) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         for caller in callers.into_iter() {
-            require!(
-                self.blockchain().is_smart_contract(&caller),
-                ERR_ENDPOINT_CALLABLE_ONLY_BY_SC
-            );
             self.accepted_callers().insert(caller);
         }
     }

@@ -7,10 +7,10 @@ use crate::{
     contexts::{bond_cache::BondCache, compensation_cache::CompensationCache},
     errors::{
         ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_CONTRACT_INACTIVE,
-        ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS, ERR_ENDPOINT_CALLABLE_ONLY_BY_SC,
-        ERR_INVALID_AMOUNT_SENT, ERR_INVALID_LOCK_PERIOD, ERR_INVALID_PAYMENT,
-        ERR_INVALID_TIMELINE_TO_PROOF, ERR_INVALID_TIMELINE_TO_REFUND,
-        ERR_INVALID_TOKEN_IDENTIFIER, ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND,
+        ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS, ERR_INVALID_AMOUNT_SENT,
+        ERR_INVALID_LOCK_PERIOD, ERR_INVALID_PAYMENT, ERR_INVALID_TIMELINE_TO_PROOF,
+        ERR_INVALID_TIMELINE_TO_REFUND, ERR_INVALID_TOKEN_IDENTIFIER,
+        ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND,
     },
     storage::Refund,
 };
@@ -51,16 +51,15 @@ pub trait LifeBondingContract:
         nonce: u64,
         lock_period: u64, //seconds
     ) {
+        let caller = self.blockchain().get_caller();
         require_contract_active!(self, ERR_CONTRACT_INACTIVE);
         require!(
             self.blockchain()
-                .is_smart_contract(&self.blockchain().get_caller()),
-            ERR_ENDPOINT_CALLABLE_ONLY_BY_SC
-        );
-
-        require!(
-            self.accepted_callers()
-                .contains(&self.blockchain().get_caller()),
+                .is_smart_contract(&self.blockchain().get_caller())
+                && self
+                    .accepted_callers()
+                    .contains(&self.blockchain().get_caller())
+                || self.is_privileged(&caller),
             ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS
         );
 
