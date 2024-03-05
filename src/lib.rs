@@ -7,7 +7,7 @@ use crate::{
     contexts::{bond_cache::BondCache, compensation_cache::CompensationCache},
     errors::{
         ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_CONTRACT_NOT_READY,
-        ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS, ERR_INVALID_AMOUNT_SENT,
+        ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS, ERR_INVALID_AMOUNT,
         ERR_INVALID_LOCK_PERIOD, ERR_INVALID_PAYMENT, ERR_INVALID_TIMELINE_TO_PROOF,
         ERR_INVALID_TIMELINE_TO_REFUND, ERR_INVALID_TOKEN_IDENTIFIER,
         ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND,
@@ -83,7 +83,7 @@ pub trait LifeBondingContract:
 
         let bond_amount = self.lock_period_bond_amount(lock_period).get();
 
-        require!(payment.amount == bond_amount, ERR_INVALID_AMOUNT_SENT);
+        require!(payment.amount == bond_amount, ERR_INVALID_AMOUNT);
 
         let current_timestamp = self.blockchain().get_block_timestamp();
         let unbound_timestamp = current_timestamp + lock_period;
