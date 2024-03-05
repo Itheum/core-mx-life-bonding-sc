@@ -170,6 +170,10 @@ pub trait LifeBondingContract:
                 0u64,
                 &bond_cache.bond_amount,
             );
+            // clear compensations as the entire bond is withdrawn
+            compensation_cache.clear();
+            self.compensations_ids().remove_by_id(compensation_id);
+            self.compensations().swap_remove(&compensation_id);
         }
 
         bond_cache.clear();
