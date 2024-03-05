@@ -1,17 +1,22 @@
 use core_mx_life_bonding_sc::{
     config::State,
-    storage::{Bond, Compensation},
+    storage::{Bond, Compensation, PenaltyType, ProxyTrait as _},
     views::ProxyTrait,
 };
-use multiversx_sc::types::BigUint;
+use multiversx_sc::{
+    api::BlockchainApi,
+    codec::multi_types::OptionalValue,
+    types::{BigUint, MultiValueEncoded},
+};
 use multiversx_sc_scenario::{
     managed_address, managed_biguint, managed_token_id,
-    scenario_model::{CheckStateStep, ScQueryStep, TxExpect},
+    scenario_model::{CheckStateStep, ScQueryStep, SetStateStep, TxExpect},
 };
 
 use crate::bonding_state::bonding_state::{
     ContractState, ADMIN_BONDING_CONTRACT_ADDRESS_EXPR, DATA_NFT_IDENTIFIER,
-    FIRST_USER_ADDRESS_EXPR, ITHEUM_TOKEN_IDENTIFIER, OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+    FIRST_USER_ADDRESS_EXPR, ITHEUM_TOKEN_IDENTIFIER, ITHEUM_TOKEN_IDENTIFIER_EXPR,
+    OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
 };
 
 #[test]
@@ -212,14 +217,30 @@ fn penalty_test() {
 #[test]
 fn initiate_refund_test() {
     let mut state = ContractState::new();
-    let admin = state.admin.clone();
     let first_user_address = state.first_user_address.clone();
 
-    let mut acc = state.mock_bond_and_compensation_storage(
-        1u64, 0u64, 0u64, 0u64, 10u64, 0u64, 10u64, 10_000u64, 10_000u64,
+    state
+        .default_deploy_and_set(10u64, 100u64)
+        .unpause_contract(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, None);
+
+    state.initiate_refund(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        20u64,
+        Some(TxExpect::user_error("str:Unknown object")),
     );
 
-    state.deploy_mock_account(&mut acc);
+    // bond and compensation with id 1
+    state.bond(
+        OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+        first_user_address.clone(),
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        10u64,
+        (ITHEUM_TOKEN_IDENTIFIER_EXPR, 0u64, 100u64),
+        None,
+    );
 
     state.world.sc_query(
         ScQueryStep::new()
@@ -245,8 +266,406 @@ fn initiate_refund_test() {
                 lock_period: 10u64,
                 bond_timestamp: 0u64,
                 unbound_timestamp: 10u64,
-                bond_amount: managed_biguint!(10_000u64),
-                remaining_amount: managed_biguint!(10_000u64),
+                bond_amount: managed_biguint!(100u64),
+                remaining_amount: managed_biguint!(100u64),
             }),
+    );
+
+    state.initiate_refund(
+        FIRST_USER_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        20u64,
+        Some(TxExpect::user_error("str:Not privileged")),
+    );
+
+    state.initiate_refund(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        20u64,
+        None,
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_compensation(1u64))
+            .expect_value(Compensation {
+                compensation_id: 1u64,
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                accumulated_amount: managed_biguint!(0u64),
+                proof_amount: managed_biguint!(0u64),
+                end_date: 20u64,
+            }),
+    );
+}
+
+#[test]
+fn modify_bond() {
+    let mut state = ContractState::new();
+    let first_user_address = state.first_user_address.clone();
+
+    state
+        .default_deploy_and_set(10u64, 100u64)
+        .unpause_contract(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, None);
+
+    // bond and compensation with id 1
+
+    state.modify_bond(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        Some(TxExpect::user_error("str:Unknown object")),
+    );
+
+    state.bond(
+        OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+        first_user_address.clone(),
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        10u64,
+        (ITHEUM_TOKEN_IDENTIFIER_EXPR, 0u64, 100u64),
+        None,
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_compensation(1u64))
+            .expect_value(Compensation {
+                compensation_id: 1u64,
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                accumulated_amount: managed_biguint!(0u64),
+                proof_amount: managed_biguint!(0u64),
+                end_date: 0u64,
+            }),
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_bond(1u64))
+            .expect_value(Bond {
+                bond_id: 1u64,
+                address: managed_address!(&first_user_address),
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                lock_period: 10u64,
+                bond_timestamp: 0u64,
+                unbound_timestamp: 10u64,
+                bond_amount: managed_biguint!(100u64),
+                remaining_amount: managed_biguint!(100u64),
+            }),
+    );
+
+    state
+        .world
+        .set_state_step(SetStateStep::new().block_timestamp(1u64));
+
+    state.modify_bond(
+        FIRST_USER_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        Some(TxExpect::user_error("str:Not privileged")),
+    );
+
+    state.modify_bond(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        None,
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_bond(1u64))
+            .expect_value(Bond {
+                bond_id: 1u64,
+                address: managed_address!(&first_user_address),
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                lock_period: 10u64,
+                bond_timestamp: 0u64,
+                unbound_timestamp: 1u64,
+                bond_amount: managed_biguint!(100u64),
+                remaining_amount: managed_biguint!(100u64),
+            }),
+    );
+}
+
+#[test]
+fn sanction_test() {
+    let mut state = ContractState::new();
+    let first_user_address = state.first_user_address.clone();
+
+    state
+        .default_deploy_and_set(10u64, 100u64)
+        .unpause_contract(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, None);
+
+    state.sanction(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        PenaltyType::Custom,
+        OptionalValue::Some(20u64),
+        Some(TxExpect::user_error("str:Unknown object")),
+    );
+
+    // bond and compensation with id 1
+    state.bond(
+        OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+        first_user_address.clone(),
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        10u64,
+        (ITHEUM_TOKEN_IDENTIFIER_EXPR, 0u64, 100u64),
+        None,
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_compensation(1u64))
+            .expect_value(Compensation {
+                compensation_id: 1u64,
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                accumulated_amount: managed_biguint!(0u64),
+                proof_amount: managed_biguint!(0u64),
+                end_date: 0u64,
+            }),
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_bond(1u64))
+            .expect_value(Bond {
+                bond_id: 1u64,
+                address: managed_address!(&first_user_address),
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                lock_period: 10u64,
+                bond_timestamp: 0u64,
+                unbound_timestamp: 10u64,
+                bond_amount: managed_biguint!(100u64),
+                remaining_amount: managed_biguint!(100u64),
+            }),
+    );
+
+    state.sanction(
+        FIRST_USER_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        PenaltyType::Minimum,
+        OptionalValue::None,
+        Some(TxExpect::user_error("str:Not privileged")),
+    );
+
+    state.sanction(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        PenaltyType::Minimum,
+        OptionalValue::None,
+        None,
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_compensation(1u64))
+            .expect_value(Compensation {
+                compensation_id: 1u64,
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                accumulated_amount: managed_biguint!(5u64),
+                proof_amount: managed_biguint!(0u64),
+                end_date: 0u64,
+            }),
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_bond(1u64))
+            .expect_value(Bond {
+                bond_id: 1u64,
+                address: managed_address!(&first_user_address),
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                lock_period: 10u64,
+                bond_timestamp: 0u64,
+                unbound_timestamp: 10u64,
+                bond_amount: managed_biguint!(100u64),
+                remaining_amount: managed_biguint!(95u64),
+            }),
+    );
+
+    state.sanction(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        PenaltyType::Custom,
+        OptionalValue::None,
+        Some(TxExpect::user_error("str:Invalid penalty value")),
+    );
+
+    state.sanction(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        PenaltyType::Custom,
+        OptionalValue::Some(1_000u64),
+        None,
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_compensation(1u64))
+            .expect_value(Compensation {
+                compensation_id: 1u64,
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                accumulated_amount: managed_biguint!(15u64),
+                proof_amount: managed_biguint!(0u64),
+                end_date: 0u64,
+            }),
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_bond(1u64))
+            .expect_value(Bond {
+                bond_id: 1u64,
+                address: managed_address!(&first_user_address),
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                lock_period: 10u64,
+                bond_timestamp: 0u64,
+                unbound_timestamp: 10u64,
+                bond_amount: managed_biguint!(100u64),
+                remaining_amount: managed_biguint!(85u64),
+            }),
+    );
+
+    state.sanction(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        PenaltyType::Maximum,
+        OptionalValue::Some(10_000u64),
+        Some(TxExpect::user_error("str:Invalid penalty value")),
+    );
+
+    state.sanction(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        PenaltyType::Custom,
+        OptionalValue::Some(8_500u64),
+        None,
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_compensation(1u64))
+            .expect_value(Compensation {
+                compensation_id: 1u64,
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                accumulated_amount: managed_biguint!(100u64),
+                proof_amount: managed_biguint!(0u64),
+                end_date: 0u64,
+            }),
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_bond(1u64))
+            .expect_value(Bond {
+                bond_id: 1u64,
+                address: managed_address!(&first_user_address),
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                lock_period: 10u64,
+                bond_timestamp: 0u64,
+                unbound_timestamp: 10u64,
+                bond_amount: managed_biguint!(100u64),
+                remaining_amount: managed_biguint!(0u64),
+            }),
+    );
+}
+
+#[test]
+fn blacklist_test() {
+    let mut state = ContractState::new();
+    let first_user_address = state.first_user_address.clone();
+
+    state
+        .default_deploy_and_set(10u64, 100u64)
+        .unpause_contract(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, None);
+
+    state.set_blacklist(
+        FIRST_USER_ADDRESS_EXPR,
+        1u64,
+        first_user_address.clone(),
+        Some(TxExpect::user_error("str:Not privileged")),
+    );
+
+    state.remove_blacklist(
+        FIRST_USER_ADDRESS_EXPR,
+        1u64,
+        first_user_address.clone(),
+        Some(TxExpect::user_error("str:Not privileged")),
+    );
+
+    state.set_blacklist(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        1u64,
+        first_user_address.clone(),
+        Some(TxExpect::user_error("str:Compensation not found")),
+    );
+
+    state.remove_blacklist(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        1u64,
+        first_user_address.clone(),
+        Some(TxExpect::user_error("str:Compensation not found")),
+    );
+
+    state.bond(
+        OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+        first_user_address.clone(),
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        10u64,
+        (ITHEUM_TOKEN_IDENTIFIER_EXPR, 0u64, 100u64),
+        None,
+    );
+
+    state.set_blacklist(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        1u64,
+        first_user_address.clone(),
+        None,
+    );
+
+    let mut blacklist = MultiValueEncoded::new();
+    blacklist.push(managed_address!(&first_user_address));
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.compensation_blacklist(1u64))
+            .expect_value(blacklist),
+    );
+
+    state.remove_blacklist(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        1u64,
+        first_user_address.clone(),
+        None,
+    );
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.compensation_blacklist(1u64))
+            .expect_value(MultiValueEncoded::new()),
     );
 }

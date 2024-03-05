@@ -1,6 +1,7 @@
 use core_mx_life_bonding_sc::{
     admin::ProxyTrait as _,
     config::{ProxyTrait as _, State},
+    contexts::bond_cache,
     storage::PenaltyType,
     storage::ProxyTrait as _,
     views::ProxyTrait as _,
@@ -128,6 +129,26 @@ impl ContractState {
             second_user_address,
             third_user_address,
         }
+    }
+
+    pub fn default_deploy_and_set(&mut self, lock_period: u64, bond_amount: u64) -> &mut Self {
+        let admin = self.admin.clone();
+        self.deploy()
+            .set_administrator(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, admin.clone(), None)
+            .set_accepted_caller(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, admin.clone(), None)
+            .set_bond_token(
+                OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+                ITHEUM_TOKEN_IDENTIFIER,
+                None,
+            )
+            .set_lock_period_and_bond(
+                OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+                lock_period,
+                bond_amount,
+                None,
+            );
+
+        self
     }
 
     pub fn deploy(&mut self) -> &mut Self {
@@ -291,6 +312,32 @@ impl ContractState {
         self
     }
 
+    pub fn bond(
+        &mut self,
+        caller: &str,
+        original_owner: Address,
+        token_identifier: &[u8],
+        nonce: u64,
+        lock_period: u64,
+        payment: (&str, u64, u64),
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
+        self.world.sc_call(
+            ScCallStep::new()
+                .from(caller)
+                .esdt_transfer(payment.0, payment.1, BigUint::from(payment.2))
+                .call(self.contract.bond(
+                    managed_address!(&original_owner),
+                    managed_token_id!(token_identifier),
+                    nonce,
+                    lock_period,
+                ))
+                .expect(tx_expect),
+        );
+        self
+    }
+
     pub fn set_lock_period_and_bond(
         &mut self,
         caller: &str,
@@ -439,200 +486,6 @@ impl ContractState {
                 )
                 .expect(expect.unwrap_or(TxExpect::ok())),
         );
-        self
-    }
-
-    pub fn mock_bond_and_compensation_storage(
-        &mut self,
-        id: u64,
-        compensation_accumulated_amount: u64,
-        compensation_proof_amount: u64,
-        compensation_end_date: u64,
-        bond_lock_period: u64,
-        bond_timestamp: u64,
-        unbound_timestamp: u64,
-        bond_amount: u64,
-        remaining_amount: u64,
-    ) -> Account {
-        let bonding_contract_code = self.world.code_expression(BONDING_CONTRACT_PATH);
-
-        let mut acc = Account::new().code(bonding_contract_code);
-
-        acc.storage.insert(
-            BytesKey::from(b"contract_state".to_vec()),
-            BytesValue::from(vec![0u8]),
-        );
-
-        acc.storage.insert(
-            BytesKey::from(b"administrator".to_vec()),
-            BytesValue::from(self.admin.as_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            BytesKey::from(b"accepted_callers".to_vec()),
-            BytesValue::from(self.admin.as_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            BytesKey::from(b"bond_payment_token".to_vec()),
-            BytesValue::from(ITHEUM_TOKEN_IDENTIFIER.to_vec()),
-        );
-
-        acc.storage.insert(
-            BytesKey::from(b"lock_periods".to_vec()),
-            BytesValue::from(bond_lock_period.to_be_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            create_bytes_key("lock_period_bond_amount", 10u64),
-            BytesValue::from(BigUint::from(bond_amount).to_bytes_be().to_vec()),
-        );
-
-        acc.storage.insert(
-            BytesKey::from(b"minimum_penalty".to_vec()),
-            BytesValue::from(500u64.to_be_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            BytesKey::from(b"maximum_penalty".to_vec()),
-            BytesValue::from(10_000u64.to_be_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            BytesKey::from(b"withdraw_penalty".to_vec()),
-            BytesValue::from(8_000u64.to_be_bytes().to_vec()),
-        );
-
-        // compensation storage with id
-
-        acc.storage.insert(
-            create_bytes_key("compensation_token_identifer", id),
-            BytesValue::from(DATA_NFT_IDENTIFIER.to_vec()),
-        );
-
-        acc.storage.insert(
-            create_bytes_key("compensation_nonce", id),
-            BytesValue::from(1u64.to_be_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            create_bytes_key("compensation_accumulated_amount", id),
-            BytesValue::from(
-                BigUint::from(compensation_accumulated_amount)
-                    .to_bytes_be()
-                    .to_vec(),
-            ),
-        );
-
-        acc.storage.insert(
-            create_bytes_key("compensation_proof_amount", id),
-            BytesValue::from(
-                BigUint::from(compensation_proof_amount)
-                    .to_bytes_be()
-                    .to_vec(),
-            ),
-        );
-
-        acc.storage.insert(
-            create_bytes_key("compensation_end_date", id),
-            BytesValue::from(compensation_end_date.to_be_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            BytesKey::from(b"compensations_idsid".to_vec()),
-            BytesValue::from(1u64.to_be_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            BytesKey::from(b"compensations_idsobject".to_vec()),
-            BytesValue::from(
-                DATA_NFT_IDENTIFIER
-                    .to_vec()
-                    .extend_from_slice(&1u64.to_le_bytes()),
-            ),
-        );
-
-        // bond storage with id
-
-        acc.storage.insert(
-            create_bytes_key("bond_address", id),
-            BytesValue::from(self.first_user_address.as_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            create_bytes_key("bond_token_identifier", id),
-            BytesValue::from(DATA_NFT_IDENTIFIER.to_vec()),
-        );
-
-        acc.storage.insert(
-            create_bytes_key("bond_nonce", id),
-            BytesValue::from(1u64.to_be_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            create_bytes_key("bond_lock_period", id),
-            BytesValue::from(bond_lock_period.to_be_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            create_bytes_key("bond_timestamp", id),
-            BytesValue::from(bond_timestamp.to_be_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            create_bytes_key("unbound_timestamp", id),
-            BytesValue::from(unbound_timestamp.to_be_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            create_bytes_key("bond_amount", id),
-            BytesValue::from(BigUint::from(bond_amount).to_bytes_be().to_vec()),
-        );
-
-        acc.storage.insert(
-            create_bytes_key("remaining_amount", id),
-            BytesValue::from(BigUint::from(remaining_amount).to_bytes_be().to_vec()),
-        );
-
-        acc.storage.insert(
-            BytesKey::from(b"bonds_idsid".to_vec()),
-            BytesValue::from(1u64.to_be_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            BytesKey::from(b"bonds_idsobject".to_vec()),
-            BytesValue::from(
-                DATA_NFT_IDENTIFIER
-                    .to_vec()
-                    .extend_from_slice(&1u64.to_le_bytes()),
-            ),
-        );
-
-        let mut key_vec = b"address_bonds".to_vec();
-        key_vec.extend_from_slice(self.first_user_address.as_array());
-
-        acc.storage.insert(
-            BytesKey::from(key_vec),
-            BytesValue::from(1u64.to_be_bytes().to_vec()),
-        );
-
-        acc.storage.insert(
-            BytesKey::from(b"bonds".to_vec()),
-            BytesValue::from(1u64.to_be_bytes().to_vec()),
-        );
-
-        acc
-    }
-
-    pub fn deploy_mock_account(&mut self, acc: &mut Account) -> &mut Self {
-        acc.owner = Option::Some(AddressValue::from(OWNER_BONDING_CONTRACT_ADDRESS_EXPR));
-        self.world.set_state_step(
-            SetStateStep::new()
-                .new_token_identifier(ITHEUM_TOKEN_IDENTIFIER_EXPR)
-                .new_token_identifier(DATA_NFT_IDENTIFIER_EXPR)
-                .put_account(BONDING_CONTRACT_ADDRESS_EXPR, acc.clone()),
-        );
-
         self
     }
 
