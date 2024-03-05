@@ -32,7 +32,7 @@ where
             bond_timestamp: sc_ref.bond_timestamp(bond_id).get(),
             unbound_timestamp: sc_ref.unbound_timestamp(bond_id).get(),
             bond_amount: sc_ref.bond_amount(bond_id).get(),
-            remaining_amount: sc_ref.bond_amount(bond_id).get(),
+            remaining_amount: sc_ref.remaining_amount(bond_id).get(),
         }
     }
 

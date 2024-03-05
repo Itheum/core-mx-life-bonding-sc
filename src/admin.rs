@@ -5,8 +5,8 @@ use crate::{
         compensation_cache::{self, CompensationCache},
     },
     errors::{
-        ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP, ERR_INVALID_TOKEN_IDENTIFIER,
-        ERR_NOT_PRIVILEGED,
+        ERR_COMPENSATION_NOT_FOUND, ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP,
+        ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
     },
     only_privileged,
     storage::{self, PenaltyType},
@@ -25,6 +25,11 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
     ) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
 
+        require!(
+            self.compensations_ids().contains_id(compensation_id),
+            ERR_COMPENSATION_NOT_FOUND
+        );
+
         for address in addresses.into_iter() {
             self.compensation_blacklist(compensation_id).insert(address);
         }
@@ -37,6 +42,11 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         addresses: MultiValueEncoded<ManagedAddress>,
     ) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
+
+        require!(
+            self.compensations_ids().contains_id(compensation_id),
+            ERR_COMPENSATION_NOT_FOUND
+        );
 
         for address in addresses.into_iter() {
             self.compensation_blacklist(compensation_id)
