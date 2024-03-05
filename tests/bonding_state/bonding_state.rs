@@ -27,10 +27,15 @@ use multiversx_sc_scenario::{
 pub const BONDING_CONTRACT_PATH: &str = "mxsc:output/core-mx-life-bonding-sc.msxc.json";
 pub const BONDING_CONTRACT_ADDRESS_EXPR: &str = "sc:core-mx-life-bonding-sc";
 
+pub const MINTER_CONTRACT_ADDRESS_EXPR: &str = "sc:minter";
+
 pub const OWNER_BONDING_CONTRACT_ADDRESS_EXPR: &str = "address:owner";
 
 pub const ITHEUM_TOKEN_IDENTIFIER_EXPR: &str = "str:ITHEUM-fce905";
 pub const ITHEUM_TOKEN_IDENTIFIER: &[u8] = b"ITHEUM-fce905";
+
+pub const ANOTHER_TOKEN_IDENTIFIER_EXPR: &str = "str:ANOTHER-fce905";
+pub const ANOTHER_TOKEN_IDENTIFIER: &[u8] = b"ANOTHER-fce905";
 
 pub const DATA_NFT_IDENTIFIER_EXPR: &str = "str:DATANFT-12345";
 pub const DATA_NFT_IDENTIFIER: &[u8] = b"DATANFT-12345";
@@ -109,6 +114,15 @@ impl ContractState {
                         .nonce(1)
                         .balance("1_000")
                         .esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "1_000"),
+                )
+                .put_account(
+                    MINTER_CONTRACT_ADDRESS_EXPR,
+                    Account::new()
+                        .nonce(1)
+                        .owner(OWNER_BONDING_CONTRACT_ADDRESS_EXPR)
+                        .code(world.code_expression(BONDING_CONTRACT_PATH))
+                        .balance("1_000")
+                        .esdt_balance(ANOTHER_TOKEN_IDENTIFIER_EXPR, "100"),
                 ),
         );
 
