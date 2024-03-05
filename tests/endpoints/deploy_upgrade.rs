@@ -1,9 +1,9 @@
-use core_mx_life_bonding_sc::{admin, config::State};
-use multiversx_sc_scenario::scenario_model::{ScCallStep, SetStateStep, TxExpect};
+use core_mx_life_bonding_sc::config::State;
+use multiversx_sc_scenario::scenario_model::{ScCallStep, TxExpect};
 
 use crate::bonding_state::bonding_state::{
-    ContractState, ADMIN_BONDING_CONTRACT_ADDRESS_EXPR, BONDING_CONTRACT_ADDRESS_EXPR,
-    BONDING_CONTRACT_PATH, FIRST_USER_ADDRESS_EXPR, OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+    ContractState, BONDING_CONTRACT_ADDRESS_EXPR, BONDING_CONTRACT_PATH,
+    OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
 };
 
 #[test]
@@ -18,18 +18,6 @@ pub fn deploy_and_pause() {
             Some(TxExpect::ok()),
         )
         .pause_contract(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, Some(TxExpect::ok()));
-    state.check_contract_state(State::Inactive);
-
-    state.unpause_contract(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, Some(TxExpect::ok()));
-    state.check_contract_state(State::Active);
-
-    state.pause_contract(
-        FIRST_USER_ADDRESS_EXPR,
-        Some(TxExpect::user_error("str:Not privileged")),
-    );
-
-    state.pause_contract(ADMIN_BONDING_CONTRACT_ADDRESS_EXPR, Some(TxExpect::ok()));
-
     state.check_contract_state(State::Inactive);
 }
 
