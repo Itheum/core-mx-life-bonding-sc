@@ -11,7 +11,7 @@ use multiversx_sc_scenario::{
 };
 
 #[test]
-fn bonding_ready_test() {
+fn bond_contract_ready_test() {
     let bond_contract = core_mx_life_bonding_sc::contract_obj::<SingleTxApi>();
 
     bond_contract.init();
