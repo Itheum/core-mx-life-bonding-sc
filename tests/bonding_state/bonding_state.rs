@@ -2,6 +2,7 @@ use core_mx_life_bonding_sc::{
     admin::ProxyTrait as _,
     config::{ProxyTrait as _, State},
     storage::PenaltyType,
+    storage::ProxyTrait as _,
     views::ProxyTrait as _,
 };
 
@@ -9,14 +10,15 @@ use core_mx_life_bonding_sc::ProxyTrait as _;
 use multiversx_sc::{
     codec::multi_types::{MultiValue2, OptionalValue},
     storage::mappers::SingleValue,
-    types::{Address, MultiValueEncoded},
+    types::{Address, MultiValueEncoded, TokenIdentifier},
 };
 use multiversx_sc_scenario::{
     api::StaticApi,
     managed_address, managed_biguint, managed_token_id,
     num_bigint::BigUint,
     scenario_model::{
-        Account, AddressValue, ScCallStep, ScDeployStep, ScQueryStep, SetStateStep, TxExpect,
+        Account, AddressValue, BytesKey, BytesValue, ScCallStep, ScDeployStep, ScQueryStep,
+        SetStateStep, TxExpect,
     },
     ContractInfo, ScenarioWorld,
 };
@@ -26,8 +28,8 @@ pub const BONDING_CONTRACT_ADDRESS_EXPR: &str = "sc:core-mx-life-bonding-sc";
 
 pub const OWNER_BONDING_CONTRACT_ADDRESS_EXPR: &str = "address:owner";
 
-pub const ITHEUM_TOKEN_IDENTIFIER_EXPR: &str = "str:ITHEUM-12345";
-pub const ITHEUM_TOKEN_IDENTIFIER: &[u8] = b"ITHEUM-12345";
+pub const ITHEUM_TOKEN_IDENTIFIER_EXPR: &str = "str:ITHEUM-fce905";
+pub const ITHEUM_TOKEN_IDENTIFIER: &[u8] = b"ITHEUM-fce905";
 
 pub const DATA_NFT_IDENTIFIER_EXPR: &str = "str:DATANFT-12345";
 pub const DATA_NFT_IDENTIFIER: &[u8] = b"DATANFT-12345";
@@ -440,9 +442,198 @@ impl ContractState {
         self
     }
 
-    pub fn mock_bond_storage(&mut self) -> &mut Self {
-        // trigger error not implemented
-        panic!("Error: Not implemented");
+    pub fn mock_bond_and_compensation_storage(
+        &mut self,
+        id: u64,
+        compensation_accumulated_amount: u64,
+        compensation_proof_amount: u64,
+        compensation_end_date: u64,
+        bond_lock_period: u64,
+        bond_timestamp: u64,
+        unbound_timestamp: u64,
+        bond_amount: u64,
+        remaining_amount: u64,
+    ) -> Account {
+        let bonding_contract_code = self.world.code_expression(BONDING_CONTRACT_PATH);
+
+        let mut acc = Account::new().code(bonding_contract_code);
+
+        acc.storage.insert(
+            BytesKey::from(b"contract_state".to_vec()),
+            BytesValue::from(vec![0u8]),
+        );
+
+        acc.storage.insert(
+            BytesKey::from(b"administrator".to_vec()),
+            BytesValue::from(self.admin.as_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            BytesKey::from(b"accepted_callers".to_vec()),
+            BytesValue::from(self.admin.as_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            BytesKey::from(b"bond_payment_token".to_vec()),
+            BytesValue::from(ITHEUM_TOKEN_IDENTIFIER.to_vec()),
+        );
+
+        acc.storage.insert(
+            BytesKey::from(b"lock_periods".to_vec()),
+            BytesValue::from(bond_lock_period.to_be_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            create_bytes_key("lock_period_bond_amount", 10u64),
+            BytesValue::from(BigUint::from(bond_amount).to_bytes_be().to_vec()),
+        );
+
+        acc.storage.insert(
+            BytesKey::from(b"minimum_penalty".to_vec()),
+            BytesValue::from(500u64.to_be_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            BytesKey::from(b"maximum_penalty".to_vec()),
+            BytesValue::from(10_000u64.to_be_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            BytesKey::from(b"withdraw_penalty".to_vec()),
+            BytesValue::from(8_000u64.to_be_bytes().to_vec()),
+        );
+
+        // compensation storage with id
+
+        acc.storage.insert(
+            create_bytes_key("compensation_token_identifer", id),
+            BytesValue::from(DATA_NFT_IDENTIFIER.to_vec()),
+        );
+
+        acc.storage.insert(
+            create_bytes_key("compensation_nonce", id),
+            BytesValue::from(1u64.to_be_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            create_bytes_key("compensation_accumulated_amount", id),
+            BytesValue::from(
+                BigUint::from(compensation_accumulated_amount)
+                    .to_bytes_be()
+                    .to_vec(),
+            ),
+        );
+
+        acc.storage.insert(
+            create_bytes_key("compensation_proof_amount", id),
+            BytesValue::from(
+                BigUint::from(compensation_proof_amount)
+                    .to_bytes_be()
+                    .to_vec(),
+            ),
+        );
+
+        acc.storage.insert(
+            create_bytes_key("compensation_end_date", id),
+            BytesValue::from(compensation_end_date.to_be_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            BytesKey::from(b"compensations_idsid".to_vec()),
+            BytesValue::from(1u64.to_be_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            BytesKey::from(b"compensations_idsobject".to_vec()),
+            BytesValue::from(
+                DATA_NFT_IDENTIFIER
+                    .to_vec()
+                    .extend_from_slice(&1u64.to_le_bytes()),
+            ),
+        );
+
+        // bond storage with id
+
+        acc.storage.insert(
+            create_bytes_key("bond_address", id),
+            BytesValue::from(self.first_user_address.as_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            create_bytes_key("bond_token_identifier", id),
+            BytesValue::from(DATA_NFT_IDENTIFIER.to_vec()),
+        );
+
+        acc.storage.insert(
+            create_bytes_key("bond_nonce", id),
+            BytesValue::from(1u64.to_be_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            create_bytes_key("bond_lock_period", id),
+            BytesValue::from(bond_lock_period.to_be_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            create_bytes_key("bond_timestamp", id),
+            BytesValue::from(bond_timestamp.to_be_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            create_bytes_key("unbound_timestamp", id),
+            BytesValue::from(unbound_timestamp.to_be_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            create_bytes_key("bond_amount", id),
+            BytesValue::from(BigUint::from(bond_amount).to_bytes_be().to_vec()),
+        );
+
+        acc.storage.insert(
+            create_bytes_key("remaining_amount", id),
+            BytesValue::from(BigUint::from(remaining_amount).to_bytes_be().to_vec()),
+        );
+
+        acc.storage.insert(
+            BytesKey::from(b"bonds_idsid".to_vec()),
+            BytesValue::from(1u64.to_be_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            BytesKey::from(b"bonds_idsobject".to_vec()),
+            BytesValue::from(
+                DATA_NFT_IDENTIFIER
+                    .to_vec()
+                    .extend_from_slice(&1u64.to_le_bytes()),
+            ),
+        );
+
+        let mut key_vec = b"address_bonds".to_vec();
+        key_vec.extend_from_slice(self.first_user_address.as_array());
+
+        acc.storage.insert(
+            BytesKey::from(key_vec),
+            BytesValue::from(1u64.to_be_bytes().to_vec()),
+        );
+
+        acc.storage.insert(
+            BytesKey::from(b"bonds".to_vec()),
+            BytesValue::from(1u64.to_be_bytes().to_vec()),
+        );
+
+        acc
+    }
+
+    pub fn deploy_mock_account(&mut self, acc: &mut Account) -> &mut Self {
+        acc.owner = Option::Some(AddressValue::from(OWNER_BONDING_CONTRACT_ADDRESS_EXPR));
+        self.world.set_state_step(
+            SetStateStep::new()
+                .new_token_identifier(ITHEUM_TOKEN_IDENTIFIER_EXPR)
+                .new_token_identifier(DATA_NFT_IDENTIFIER_EXPR)
+                .put_account(BONDING_CONTRACT_ADDRESS_EXPR, acc.clone()),
+        );
+
+        self
     }
 
     pub fn withdraw(
@@ -521,4 +712,16 @@ impl ContractState {
         );
         self
     }
+}
+
+fn create_bytes_key<T: Into<u64>>(string: &str, value: T) -> BytesKey {
+    let value_u64 = value.into();
+    let bytes = value_u64.to_be_bytes().to_vec();
+
+    let mut storage_mapper = Vec::new();
+
+    storage_mapper.extend_from_slice(string.as_bytes());
+    storage_mapper.extend_from_slice(&bytes);
+
+    BytesKey::from(storage_mapper)
 }
