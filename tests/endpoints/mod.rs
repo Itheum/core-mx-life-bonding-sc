@@ -1,3 +1,7 @@
 mod admin;
+mod bond;
+mod claim_refund;
 mod deploy_upgrade;
-mod public;
+mod proof;
+mod renew;
+mod withdraw;
