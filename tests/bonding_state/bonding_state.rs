@@ -1,25 +1,22 @@
 use core_mx_life_bonding_sc::{
     admin::ProxyTrait as _,
     config::{ProxyTrait as _, State},
-    contexts::bond_cache,
     storage::PenaltyType,
-    storage::ProxyTrait as _,
-    views::ProxyTrait as _,
 };
 
 use core_mx_life_bonding_sc::ProxyTrait as _;
 use multiversx_sc::{
     codec::multi_types::{MultiValue2, OptionalValue},
     storage::mappers::SingleValue,
-    types::{Address, MultiValueEncoded, TokenIdentifier},
+    types::{Address, MultiValueEncoded},
 };
 use multiversx_sc_scenario::{
     api::StaticApi,
     managed_address, managed_biguint, managed_token_id,
     num_bigint::BigUint,
     scenario_model::{
-        Account, AddressValue, BytesKey, BytesValue, ScCallStep, ScDeployStep, ScQueryStep,
-        SetStateStep, TxExpect,
+        Account, AddressValue, BytesValue, ScCallStep, ScDeployStep, ScQueryStep, SetStateStep,
+        TxExpect,
     },
     ContractInfo, ScenarioWorld,
 };
@@ -99,21 +96,24 @@ impl ContractState {
                     Account::new()
                         .nonce(1)
                         .balance("1_000")
-                        .esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "1_000"),
+                        .esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "100")
+                        .esdt_nft_balance(DATA_NFT_IDENTIFIER_EXPR, 1u64, 2u64, None::<BytesValue>),
                 )
                 .put_account(
                     SECOND_USER_ADDRESS_EXPR,
                     Account::new()
                         .nonce(1)
                         .balance("1_000")
-                        .esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "1_000"),
+                        .esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "100")
+                        .esdt_nft_balance(DATA_NFT_IDENTIFIER_EXPR, 1u64, 2u64, None::<BytesValue>),
                 )
                 .put_account(
                     THIRD_USER_ADDRESS_EXPR,
                     Account::new()
                         .nonce(1)
                         .balance("1_000")
-                        .esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "1_000"),
+                        .esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "100")
+                        .esdt_nft_balance(DATA_NFT_IDENTIFIER_EXPR, 1u64, 2u64, None::<BytesValue>),
                 )
                 .put_account(
                     MINTER_CONTRACT_ADDRESS_EXPR,
@@ -546,7 +546,7 @@ impl ContractState {
         caller: &str,
         payment_token_identifier: &[u8],
         payment_token_nonce: u64,
-        payment_amount: BigUint,
+        payment_amount: u64,
         expect: Option<TxExpect>,
     ) -> &mut Self {
         self.world.sc_call(
@@ -557,6 +557,7 @@ impl ContractState {
                     payment_token_nonce,
                     payment_amount,
                 )
+                .call(self.contract.add_proof())
                 .expect(expect.unwrap_or(TxExpect::ok())),
         );
         self
@@ -564,13 +565,14 @@ impl ContractState {
 
     pub fn claim_refund(
         &mut self,
+        caller: &str,
         token_identifier: &[u8],
         nonce: u64,
         expect: Option<TxExpect>,
     ) -> &mut Self {
         self.world.sc_call(
             ScCallStep::new()
-                .from(OWNER_BONDING_CONTRACT_ADDRESS_EXPR)
+                .from(caller)
                 .call(
                     self.contract
                         .claim_refund(managed_token_id!(token_identifier), nonce),
@@ -579,16 +581,4 @@ impl ContractState {
         );
         self
     }
-}
-
-fn create_bytes_key<T: Into<u64>>(string: &str, value: T) -> BytesKey {
-    let value_u64 = value.into();
-    let bytes = value_u64.to_be_bytes().to_vec();
-
-    let mut storage_mapper = Vec::new();
-
-    storage_mapper.extend_from_slice(string.as_bytes());
-    storage_mapper.extend_from_slice(&bytes);
-
-    BytesKey::from(storage_mapper)
 }
