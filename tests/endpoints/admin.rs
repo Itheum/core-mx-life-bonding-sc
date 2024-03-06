@@ -3,14 +3,10 @@ use core_mx_life_bonding_sc::{
     storage::{Bond, Compensation, PenaltyType, ProxyTrait as _},
     views::ProxyTrait,
 };
-use multiversx_sc::{
-    api::BlockchainApi,
-    codec::multi_types::OptionalValue,
-    types::{BigUint, MultiValueEncoded},
-};
+use multiversx_sc::{codec::multi_types::OptionalValue, types::MultiValueEncoded};
 use multiversx_sc_scenario::{
     managed_address, managed_biguint, managed_token_id,
-    scenario_model::{CheckStateStep, ScQueryStep, SetStateStep, TxExpect},
+    scenario_model::{ScQueryStep, SetStateStep, TxExpect},
 };
 
 use crate::bonding_state::bonding_state::{
