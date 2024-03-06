@@ -37,7 +37,9 @@ pub trait ViewsModule: storage::StorageModule {
         &self,
         input: MultiValueEncoded<MultiValue2<TokenIdentifier, u64>>,
     ) -> ManagedVec<Compensation<Self::Api>> {
-        let compensations = input
+        
+
+        input
             .into_iter()
             .filter_map(|value| {
                 let (token_identifier, nonce) = value.into_tuple();
@@ -48,9 +50,7 @@ pub trait ViewsModule: storage::StorageModule {
                     None
                 }
             })
-            .collect::<ManagedVec<Compensation<Self::Api>>>();
-
-        compensations
+            .collect::<ManagedVec<Compensation<Self::Api>>>()
     }
 
     #[view(getPagedCompensations)]
@@ -59,19 +59,19 @@ pub trait ViewsModule: storage::StorageModule {
         start_index: u64,
         end_index: u64,
     ) -> ManagedVec<Compensation<Self::Api>> {
-        let compensations = self
+        
+
+        self
             .compensations()
             .into_iter()
             .skip(start_index as usize)
             .take((end_index - start_index + 1) as usize)
             .map(|compensation_id| self.get_compensation(compensation_id))
-            .collect();
-
-        compensations
+            .collect()
     }
 
     #[view(getAddressRefundForCompensation)]
-    fn get_address_compensation(
+    fn get_address_refund_for_compensation(
         &self,
         address: ManagedAddress,
         token_identifier: TokenIdentifier,
@@ -105,7 +105,9 @@ pub trait ViewsModule: storage::StorageModule {
         &self,
         input: MultiValueEncoded<MultiValue2<TokenIdentifier, u64>>,
     ) -> ManagedVec<Bond<Self::Api>> {
-        let bonds = input
+        
+
+        input
             .into_iter()
             .filter_map(|value| {
                 let (token_identifier, nonce) = value.into_tuple();
@@ -116,58 +118,56 @@ pub trait ViewsModule: storage::StorageModule {
                     None
                 }
             })
-            .collect::<ManagedVec<Bond<Self::Api>>>();
-
-        bonds
+            .collect::<ManagedVec<Bond<Self::Api>>>()
     }
 
     #[view(getBonds)]
     fn get_bonds(&self, bond_ids: MultiValueEncoded<u64>) -> ManagedVec<Bond<Self::Api>> {
-        let bonds = bond_ids
+        
+        bond_ids
             .into_iter()
             .map(|bond_id| self.get_bond(bond_id))
-            .collect::<ManagedVec<Bond<Self::Api>>>();
-        bonds
+            .collect::<ManagedVec<Bond<Self::Api>>>()
     }
 
     #[view(getAddressBonds)]
     fn get_address_bonds(&self, address: ManagedAddress<Self::Api>) -> ManagedVec<Bond<Self::Api>> {
-        let bonds = self
+        
+
+        self
             .address_bonds(&address)
             .into_iter()
             .map(|bond_id| self.get_bond(bond_id))
-            .collect::<ManagedVec<Bond<Self::Api>>>();
-
-        bonds
+            .collect::<ManagedVec<Bond<Self::Api>>>()
     }
 
     #[view(getAllBonds)]
     fn get_all_bonds(&self) -> ManagedVec<Bond<Self::Api>> {
-        let bonds = self
+        
+
+        self
             .bonds()
             .into_iter()
             .map(|bond_id| self.get_bond(bond_id))
-            .collect();
-
-        bonds
+            .collect()
     }
 
     #[view(getPagedBonds)]
     fn get_paged_bonds(&self, start_index: u64, end_index: u64) -> ManagedVec<Bond<Self::Api>> {
-        let bonds = self
+        
+
+        self
             .bonds()
             .into_iter()
             .skip(start_index as usize)
             .take((end_index - start_index + 1) as usize)
             .map(|bond_id| self.get_bond(bond_id))
-            .collect();
-
-        bonds
+            .collect()
     }
 
     #[view(getBondsLen)]
     fn get_bonds_len(&self) -> usize {
-        self.bonds().len() as usize
+        self.bonds().len()
     }
 
     #[view(getLockPeriodsBonds)]

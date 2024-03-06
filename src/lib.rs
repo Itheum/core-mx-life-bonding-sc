@@ -8,9 +8,8 @@ use crate::{
     errors::{
         ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_CONTRACT_NOT_READY,
         ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS, ERR_INVALID_AMOUNT,
-        ERR_INVALID_LOCK_PERIOD, ERR_INVALID_PAYMENT, ERR_INVALID_TIMELINE_TO_PROOF,
-        ERR_INVALID_TIMELINE_TO_REFUND, ERR_INVALID_TOKEN_IDENTIFIER,
-        ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND,
+        ERR_INVALID_LOCK_PERIOD, ERR_INVALID_TIMELINE_TO_PROOF, ERR_INVALID_TIMELINE_TO_REFUND,
+        ERR_INVALID_TOKEN_IDENTIFIER, ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND,
     },
     storage::Refund,
 };
@@ -151,7 +150,7 @@ pub trait LifeBondingContract:
                 * &BigUint::from(self.withdraw_penalty().get())
                 / &BigUint::from(10_000u64);
 
-            if penalty_amount < compensation_cache.accumulated_amount {
+            if &bond_cache.bond_amount - &penalty_amount < compensation_cache.accumulated_amount {
                 sc_panic!(ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT);
             }
 
@@ -206,30 +205,16 @@ pub trait LifeBondingContract:
         let caller = self.blockchain().get_caller();
         let payment = self.call_value().single_esdt();
 
-        let token_type = self
-            .blockchain()
-            .get_esdt_token_data(
-                &self.blockchain().get_sc_address(),
-                &payment.token_identifier,
-                payment.token_nonce,
-            )
-            .token_type;
-
         let compensation_id = self
             .compensations_ids()
             .get_id_non_zero((payment.token_identifier.clone(), payment.token_nonce));
-
-        require!(
-            token_type == EsdtTokenType::NonFungible,
-            ERR_INVALID_PAYMENT
-        );
 
         let mut compensation_cache = CompensationCache::new(self, compensation_id);
 
         let current_timestamp = self.blockchain().get_block_timestamp();
 
         require!(
-            current_timestamp > compensation_cache.end_date,
+            current_timestamp <= compensation_cache.end_date && compensation_cache.end_date != 0u64,
             ERR_INVALID_TIMELINE_TO_PROOF
         );
 
@@ -258,12 +243,12 @@ pub trait LifeBondingContract:
         let current_timestamp = self.blockchain().get_block_timestamp();
 
         require!(
-            current_timestamp < compensation_cache.end_date + COMPENSATION_SAFE_PERIOD, // 86_400 seconds safe period for black list to be uploaded
+            current_timestamp > compensation_cache.end_date + COMPENSATION_SAFE_PERIOD, // 86_400 seconds safe period for black list to be uploaded
             ERR_INVALID_TIMELINE_TO_REFUND
         );
 
         require!(
-            self.address_refund(&caller, compensation_id).is_empty(),
+            !self.address_refund(&caller, compensation_id).is_empty(),
             ERR_REFUND_NOT_FOUND
         );
 
@@ -284,9 +269,7 @@ pub trait LifeBondingContract:
             let mut sum_of_blacklist_refunds = BigUint::zero();
 
             for address in self.compensation_blacklist(compensation_id).into_iter() {
-                if self.address_refund(&address, compensation_id).is_empty() {
-                    sum_of_blacklist_refunds += BigUint::zero();
-                } else {
+                if !self.address_refund(&address, compensation_id).is_empty() {
                     sum_of_blacklist_refunds += self
                         .address_refund(&address, compensation_id)
                         .get()
@@ -307,7 +290,7 @@ pub trait LifeBondingContract:
 
             let mut payments = ManagedVec::new();
 
-            payments.push(refund.proof_of_refund.clone());
+            payments.push(refund.proof_of_refund);
             payments.push(EsdtTokenPayment::new(
                 self.bond_payment_token().get(),
                 0u64,

@@ -62,6 +62,6 @@ where
             .set(&self.proof_amount);
         self.sc_ref
             .compensation_end_date(self.compensation_id)
-            .set(&self.end_date);
+            .set(self.end_date);
     }
 }

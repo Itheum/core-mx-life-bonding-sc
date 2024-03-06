@@ -176,7 +176,7 @@ pub trait AdminModule: crate::config::ConfigModule + storage::StorageModule {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         for input in args.into_iter() {
             let (lock_period, bond) = input.into_tuple();
-            self.lock_periods().insert(lock_period.clone());
+            self.lock_periods().insert(lock_period);
             self.lock_period_bond_amount(lock_period).set(bond);
         }
     }

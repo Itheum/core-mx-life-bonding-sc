@@ -54,13 +54,13 @@ pub trait ConfigModule: storage::StorageModule {
         if self.administrator().is_empty() {
             is_ready = false;
         }
-        if self.accepted_callers().len() == 0 {
+        if self.accepted_callers().is_empty() {
             is_ready = false;
         }
         if self.bond_payment_token().is_empty() {
             is_ready = false;
         }
-        if self.lock_periods().len() == 0 {
+        if self.lock_periods().is_empty() {
             is_ready = false;
         }
         is_ready
