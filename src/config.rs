@@ -1,4 +1,4 @@
-use crate::storage;
+use crate::{events, storage};
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
@@ -14,10 +14,11 @@ pub enum State {
 pub const COMPENSATION_SAFE_PERIOD: u64 = 86_400;
 
 #[multiversx_sc::module]
-pub trait ConfigModule: storage::StorageModule {
+pub trait ConfigModule: storage::StorageModule + events::EventsModule {
     #[only_owner]
     #[endpoint(setAdministrator)]
     fn set_administrator(&self, administrator: ManagedAddress) {
+        self.set_administrator_event(&administrator);
         self.administrator().set(administrator);
     }
 

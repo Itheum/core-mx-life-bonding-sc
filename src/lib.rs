@@ -21,24 +21,35 @@ pub mod admin;
 pub mod config;
 pub mod contexts;
 pub mod errors;
+pub mod events;
 pub mod storage;
 pub mod views;
-
 #[multiversx_sc::contract]
 pub trait LifeBondingContract:
-    storage::StorageModule + views::ViewsModule + admin::AdminModule + config::ConfigModule
+    storage::StorageModule
+    + views::ViewsModule
+    + admin::AdminModule
+    + config::ConfigModule
+    + events::EventsModule
 {
     #[init]
     fn init(&self) {
         self.contract_state().set(State::Inactive);
+        self.contract_state_event(State::Inactive);
+
         self.minimum_penalty().set(500);
         self.maximum_penalty().set(10_000);
         self.withdraw_penalty().set(8_000);
+
+        self.minimum_penalty_event(500);
+        self.maximum_penalty_event(10_000);
+        self.withdraw_penalty_event(8_000);
     }
 
     #[upgrade]
     fn upgrade(&self) {
         self.contract_state().set(State::Inactive);
+        self.contract_state_event(State::Inactive);
     }
 
     #[payable("*")]
@@ -125,6 +136,9 @@ pub trait LifeBondingContract:
         self.compensation_proof_amount(compensation_id)
             .set(BigUint::zero());
         self.compensation_end_date(compensation_id).set(0u64);
+
+        self.bond_event(&self.get_bond(bond_id));
+        self.compensation_event(&self.get_compensation(compensation_id));
     }
 
     #[endpoint(withdraw)]
@@ -145,8 +159,9 @@ pub trait LifeBondingContract:
 
         let mut compensation_cache = CompensationCache::new(self, compensation_id);
 
+        let mut penalty_amount = BigUint::zero();
         if bond_cache.unbound_timestamp >= current_timestamp {
-            let penalty_amount = &bond_cache.bond_amount
+            penalty_amount = &bond_cache.bond_amount
                 * &BigUint::from(self.withdraw_penalty().get())
                 / &BigUint::from(10_000u64);
 
@@ -175,6 +190,13 @@ pub trait LifeBondingContract:
             self.compensations().swap_remove(&compensation_id);
         }
 
+        self.withdraw_event(
+            &bond_id,
+            &caller,
+            &(&bond_cache.bond_amount - &penalty_amount),
+            &penalty_amount,
+        );
+
         bond_cache.clear();
         self.bonds_ids().remove_by_id(bond_id);
         self.address_bonds(&caller).swap_remove(&bond_id);
@@ -196,6 +218,8 @@ pub trait LifeBondingContract:
 
         bond_cache.unbound_timestamp = current_timestamp + bond_cache.lock_period;
         bond_cache.bond_timestamp = current_timestamp;
+
+        self.renew_event(&bond_id, &caller, &bond_cache.unbound_timestamp);
     }
 
     #[payable("*")]
@@ -219,6 +243,13 @@ pub trait LifeBondingContract:
         );
 
         compensation_cache.proof_amount += &payment.amount;
+
+        self.proof_event(
+            &compensation_id,
+            &payment.token_identifier,
+            &payment.token_nonce,
+            &payment.amount,
+        );
 
         let refund = Refund {
             compensation_id,
@@ -289,6 +320,17 @@ pub trait LifeBondingContract:
             compensation_cache.proof_amount -= &refund.proof_of_refund.amount;
 
             let mut payments = ManagedVec::new();
+
+            self.claim_refund_event(
+                &compensation_id,
+                &caller,
+                &refund.proof_of_refund.token_identifier,
+                &refund.proof_of_refund.token_nonce,
+                &refund.proof_of_refund.amount,
+                &self.bond_payment_token().get(),
+                &0u64,
+                &refund_amount,
+            );
 
             payments.push(refund.proof_of_refund);
             payments.push(EsdtTokenPayment::new(
