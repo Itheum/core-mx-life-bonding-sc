@@ -38,7 +38,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getCompensation => get_compensation
         getCompensations => get_compensations
         getPagedCompensations => get_paged_compensations
-        getAddressRefundForCompensation => get_address_compensation
+        getAddressRefundForCompensation => get_address_refund_for_compensation
         getBondsByTokenIdentifierNonce => get_bonds_by_token_identifier_nonce
         getBonds => get_bonds
         getAddressBonds => get_address_bonds
