@@ -32,7 +32,6 @@ pub const ITHEUM_TOKEN_IDENTIFIER_EXPR: &str = "str:ITHEUM-fce905";
 pub const ITHEUM_TOKEN_IDENTIFIER: &[u8] = b"ITHEUM-fce905";
 
 pub const ANOTHER_TOKEN_IDENTIFIER_EXPR: &str = "str:ANOTHER-fce905";
-pub const ANOTHER_TOKEN_IDENTIFIER: &[u8] = b"ANOTHER-fce905";
 
 pub const DATA_NFT_IDENTIFIER_EXPR: &str = "str:DATANFT-12345";
 pub const DATA_NFT_IDENTIFIER: &[u8] = b"DATANFT-12345";

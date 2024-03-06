@@ -1,11 +1,11 @@
 use core_mx_life_bonding_sc::{
     config::COMPENSATION_SAFE_PERIOD,
-    storage::{Compensation, PenaltyType, Refund},
+    storage::{Compensation, PenaltyType},
     views::ProxyTrait,
 };
-use multiversx_sc::{codec::multi_types::OptionalValue, types::EsdtTokenPayment};
+use multiversx_sc::codec::multi_types::OptionalValue;
 use multiversx_sc_scenario::{
-    managed_address, managed_token_id,
+    managed_token_id,
     scenario_model::{
         AddressValue, CheckAccount, CheckStateStep, ScQueryStep, SetStateStep, TransferStep,
         TxExpect,
