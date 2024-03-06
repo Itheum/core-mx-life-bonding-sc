@@ -37,8 +37,6 @@ pub trait ViewsModule: storage::StorageModule {
         &self,
         input: MultiValueEncoded<MultiValue2<TokenIdentifier, u64>>,
     ) -> ManagedVec<Compensation<Self::Api>> {
-        
-
         input
             .into_iter()
             .filter_map(|value| {
@@ -59,10 +57,7 @@ pub trait ViewsModule: storage::StorageModule {
         start_index: u64,
         end_index: u64,
     ) -> ManagedVec<Compensation<Self::Api>> {
-        
-
-        self
-            .compensations()
+        self.compensations()
             .into_iter()
             .skip(start_index as usize)
             .take((end_index - start_index + 1) as usize)
@@ -105,8 +100,6 @@ pub trait ViewsModule: storage::StorageModule {
         &self,
         input: MultiValueEncoded<MultiValue2<TokenIdentifier, u64>>,
     ) -> ManagedVec<Bond<Self::Api>> {
-        
-
         input
             .into_iter()
             .filter_map(|value| {
@@ -123,7 +116,6 @@ pub trait ViewsModule: storage::StorageModule {
 
     #[view(getBonds)]
     fn get_bonds(&self, bond_ids: MultiValueEncoded<u64>) -> ManagedVec<Bond<Self::Api>> {
-        
         bond_ids
             .into_iter()
             .map(|bond_id| self.get_bond(bond_id))
@@ -132,10 +124,7 @@ pub trait ViewsModule: storage::StorageModule {
 
     #[view(getAddressBonds)]
     fn get_address_bonds(&self, address: ManagedAddress<Self::Api>) -> ManagedVec<Bond<Self::Api>> {
-        
-
-        self
-            .address_bonds(&address)
+        self.address_bonds(&address)
             .into_iter()
             .map(|bond_id| self.get_bond(bond_id))
             .collect::<ManagedVec<Bond<Self::Api>>>()
@@ -143,10 +132,7 @@ pub trait ViewsModule: storage::StorageModule {
 
     #[view(getAllBonds)]
     fn get_all_bonds(&self) -> ManagedVec<Bond<Self::Api>> {
-        
-
-        self
-            .bonds()
+        self.bonds()
             .into_iter()
             .map(|bond_id| self.get_bond(bond_id))
             .collect()
@@ -154,10 +140,7 @@ pub trait ViewsModule: storage::StorageModule {
 
     #[view(getPagedBonds)]
     fn get_paged_bonds(&self, start_index: u64, end_index: u64) -> ManagedVec<Bond<Self::Api>> {
-        
-
-        self
-            .bonds()
+        self.bonds()
             .into_iter()
             .skip(start_index as usize)
             .take((end_index - start_index + 1) as usize)
@@ -168,6 +151,11 @@ pub trait ViewsModule: storage::StorageModule {
     #[view(getBondsLen)]
     fn get_bonds_len(&self) -> usize {
         self.bonds().len()
+    }
+
+    #[view(getCompensationsLen)]
+    fn get_compensations_len(&self) -> usize {
+        self.compensations().len()
     }
 
     #[view(getLockPeriodsBonds)]

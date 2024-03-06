@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           44
+// Endpoints:                           45
 // Async Callback (empty):               1
-// Total number of exported functions:  46
+// Total number of exported functions:  47
 
 #![no_std]
 #![allow(internal_features)]
@@ -45,6 +45,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getAllBonds => get_all_bonds
         getPagedBonds => get_paged_bonds
         getBondsLen => get_bonds_len
+        getCompensationsLen => get_compensations_len
         getLockPeriodsBonds => get_lock_periods_bonds
         setBlacklist => add_to_black_list
         removeBlacklist => remove_from_black_list
