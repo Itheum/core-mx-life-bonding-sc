@@ -24,6 +24,28 @@ pub enum PenaltyType {
     Eq,
     Debug,
 )]
+pub struct ContractConfiguration<M: ManagedTypeApi> {
+    pub bond_payment_token: TokenIdentifier<M>,
+    pub lock_periods: ManagedVec<M, u64>,
+    pub bond_amounts: ManagedVec<M, BigUint<M>>,
+    pub minimum_penalty: u64,
+    pub maximum_penalty: u64,
+    pub withdraw_penalty: u64,
+    pub accepted_callers: ManagedVec<M, ManagedAddress<M>>,
+}
+
+#[derive(
+    TopEncode,
+    TopDecode,
+    NestedEncode,
+    NestedDecode,
+    TypeAbi,
+    Clone,
+    ManagedVecItem,
+    PartialEq,
+    Eq,
+    Debug,
+)]
 pub struct Bond<M: ManagedTypeApi> {
     pub bond_id: u64,
     pub address: ManagedAddress<M>,

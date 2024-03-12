@@ -1,4 +1,4 @@
-use crate::storage::{self, Bond, Compensation, Refund};
+use crate::storage::{self, Bond, Compensation, ContractConfiguration, Refund};
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
@@ -168,5 +168,19 @@ pub trait ViewsModule: storage::StorageModule {
             .collect::<ManagedVec<BigUint>>();
 
         (lock_periods, bond_amounts)
+    }
+
+    #[view(getContractConfiguration)]
+    fn get_contract_configuration(&self) -> ContractConfiguration<Self::Api> {
+        let (lock_periods, bond_amounts) = self.get_lock_periods_bonds();
+        ContractConfiguration {
+            bond_payment_token: self.bond_payment_token().get(),
+            lock_periods,
+            bond_amounts,
+            minimum_penalty: self.minimum_penalty().get(),
+            withdraw_penalty: self.withdraw_penalty().get(),
+            maximum_penalty: self.maximum_penalty().get(),
+            accepted_callers: self.accepted_callers().into_iter().collect(),
+        }
     }
 }
