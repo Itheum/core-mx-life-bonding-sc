@@ -1,4 +1,4 @@
-use crate::contexts::mappers::object_to_id_mapper::ObjectToIdMapper;
+use crate::{config::State, contexts::mappers::object_to_id_mapper::ObjectToIdMapper};
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
@@ -25,7 +25,8 @@ pub enum PenaltyType {
     Debug,
 )]
 pub struct ContractConfiguration<M: ManagedTypeApi> {
-    pub bond_payment_token: TokenIdentifier<M>,
+    pub contract_state: State,
+    pub bond_payment_token_identifier: TokenIdentifier<M>,
     pub lock_periods: ManagedVec<M, u64>,
     pub bond_amounts: ManagedVec<M, BigUint<M>>,
     pub minimum_penalty: u64,

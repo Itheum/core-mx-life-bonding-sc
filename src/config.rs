@@ -4,7 +4,17 @@ multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 #[derive(
-    TopEncode, TopDecode, NestedEncode, NestedDecode, TypeAbi, Clone, PartialEq, Eq, Debug, Copy,
+    TopEncode,
+    TopDecode,
+    NestedEncode,
+    NestedDecode,
+    TypeAbi,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    Copy,
+    ManagedVecItem,
 )]
 pub enum State {
     Inactive,

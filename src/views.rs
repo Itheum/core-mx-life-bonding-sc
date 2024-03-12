@@ -1,10 +1,15 @@
-use crate::storage::{self, Bond, Compensation, ContractConfiguration, Refund};
+use crate::{
+    config, events,
+    storage::{self, Bond, Compensation, ContractConfiguration, Refund},
+};
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
 
 #[multiversx_sc::module]
-pub trait ViewsModule: storage::StorageModule {
+pub trait ViewsModule:
+    storage::StorageModule + config::ConfigModule + events::EventsModule
+{
     #[view(getBond)]
     fn get_bond(&self, bond_id: u64) -> Bond<Self::Api> {
         Bond {
@@ -174,7 +179,8 @@ pub trait ViewsModule: storage::StorageModule {
     fn get_contract_configuration(&self) -> ContractConfiguration<Self::Api> {
         let (lock_periods, bond_amounts) = self.get_lock_periods_bonds();
         ContractConfiguration {
-            bond_payment_token: self.bond_payment_token().get(),
+            contract_state: self.contract_state().get(),
+            bond_payment_token_identifier: self.bond_payment_token().get(),
             lock_periods,
             bond_amounts,
             minimum_penalty: self.minimum_penalty().get(),
