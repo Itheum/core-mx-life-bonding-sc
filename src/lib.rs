@@ -6,10 +6,10 @@ use crate::{
     config::COMPENSATION_SAFE_PERIOD,
     contexts::{bond_cache::BondCache, compensation_cache::CompensationCache},
     errors::{
-        ERR_BOND_ALREADY_CREATED, ERR_BOND_NOT_FOUND, ERR_CONTRACT_NOT_READY,
-        ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS, ERR_INVALID_AMOUNT,
-        ERR_INVALID_LOCK_PERIOD, ERR_INVALID_TIMELINE_TO_PROOF, ERR_INVALID_TIMELINE_TO_REFUND,
-        ERR_INVALID_TOKEN_IDENTIFIER, ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND,
+        ERR_BOND_NOT_FOUND, ERR_CONTRACT_NOT_READY, ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS,
+        ERR_INVALID_AMOUNT, ERR_INVALID_LOCK_PERIOD, ERR_INVALID_TIMELINE_TO_PROOF,
+        ERR_INVALID_TIMELINE_TO_REFUND, ERR_INVALID_TOKEN_IDENTIFIER,
+        ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND,
     },
     storage::Refund,
 };
@@ -63,13 +63,18 @@ pub trait LifeBondingContract:
     ) {
         require_contract_ready!(self, ERR_CONTRACT_NOT_READY);
         let caller = self.blockchain().get_caller();
+
+        let bond_id = self
+            .bonds_ids()
+            .get_id_or_insert((token_identifier.clone(), nonce));
         require!(
             self.blockchain()
                 .is_smart_contract(&self.blockchain().get_caller())
                 && self
                     .accepted_callers()
                     .contains(&self.blockchain().get_caller())
-                || self.is_privileged(&caller),
+                || self.is_privileged(&caller)
+                || self.address_bonds(&caller).contains(&bond_id),
             ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS
         );
 
@@ -98,16 +103,12 @@ pub trait LifeBondingContract:
         let current_timestamp = self.blockchain().get_block_timestamp();
         let unbound_timestamp = current_timestamp + lock_period;
 
-        let check_bond_id = self.bonds_ids().get_id((token_identifier.clone(), nonce));
+        // let check_bond_id = self.bonds_ids().get_id((token_identifier.clone(), nonce));
 
-        require!(
-            !self.bonds_ids().contains_id(check_bond_id),
-            ERR_BOND_ALREADY_CREATED
-        );
-
-        let bond_id = self
-            .bonds_ids()
-            .insert_new((token_identifier.clone(), nonce));
+        // require!(
+        //     !self.bonds_ids().contains_id(check_bond_id),
+        //     ERR_BOND_ALREADY_CREATED
+        // );
 
         self.bond_address(bond_id).set(original_caller.clone());
         self.bond_token_identifier(bond_id)
@@ -185,9 +186,9 @@ pub trait LifeBondingContract:
                 &bond_cache.bond_amount,
             );
             // clear compensations as the entire bond is withdrawn
-            compensation_cache.clear();
-            self.compensations_ids().remove_by_id(compensation_id);
-            self.compensations().swap_remove(&compensation_id);
+            // compensation_cache.clear();
+            // self.compensations_ids().remove_by_id(compensation_id);
+            self.compensations().swap_remove(&compensation_id); // remove from showing if it's withdrawn
         }
 
         self.withdraw_event(
@@ -197,10 +198,11 @@ pub trait LifeBondingContract:
             &penalty_amount,
         );
 
-        bond_cache.clear();
-        self.bonds_ids().remove_by_id(bond_id);
-        self.address_bonds(&caller).swap_remove(&bond_id);
-        self.bonds().swap_remove(&bond_id);
+        // Do not clear bond totally as creator can come and bond/renew again
+        // bond_cache.clear();
+        // self.bonds_ids().remove_by_id(bond_id);
+        // self.address_bonds(&caller).swap_remove(&bond_id);
+        self.bonds().swap_remove(&bond_id); // remove from showing if it's withdrawn
     }
 
     #[endpoint(renew)]
@@ -352,9 +354,11 @@ pub trait LifeBondingContract:
         if compensation_cache.accumulated_amount == BigUint::zero() // remove compensation if there is no more accumulated amount
             && compensation_cache.proof_amount == BigUint::zero()
         {
-            self.compensations().swap_remove(&compensation_id);
-            compensation_cache.clear();
-            self.compensations_ids().remove_by_id(compensation_id);
+            self.compensations().swap_remove(&compensation_id); // remove from showing if it's empty
+
+            // Do not clear compensation totally as creator can come and bond/renew again
+            // compensation_cache.clear();
+            // self.compensations_ids().remove_by_id(compensation_id);
         }
     }
 }
