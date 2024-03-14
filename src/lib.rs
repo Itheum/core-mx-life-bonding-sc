@@ -214,6 +214,11 @@ pub trait LifeBondingContract:
 
         require!(bond_cache.address == caller, ERR_BOND_NOT_FOUND);
 
+        require!(
+            self.lock_periods().contains(&bond_cache.lock_period),
+            ERR_INVALID_LOCK_PERIOD
+        );
+
         let current_timestamp = self.blockchain().get_block_timestamp();
 
         bond_cache.unbound_timestamp = current_timestamp + bond_cache.lock_period;

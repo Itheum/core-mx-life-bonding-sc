@@ -88,4 +88,14 @@ fn renew() {
                 remaining_amount: managed_biguint!(100u64),
             }),
     );
+
+    state.remove_lock_period_and_bond(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, 10u64, None);
+    state.set_lock_period_and_bond(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, 20u64, 200u64, None);
+
+    state.renew(
+        FIRST_USER_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        Some(TxExpect::user_error("str:Invalid lock period")),
+    );
 }
