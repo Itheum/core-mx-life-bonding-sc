@@ -154,7 +154,7 @@ pub trait LifeBondingContract:
             .compensations_ids()
             .get_id_non_zero((token_identifier, nonce));
 
-        let mut bond_cache = BondCache::new(self, bond_id);
+        let bond_cache = BondCache::new(self, bond_id);
 
         let current_timestamp = self.blockchain().get_block_timestamp();
 
@@ -183,7 +183,7 @@ pub trait LifeBondingContract:
                 &caller,
                 &self.bond_payment_token().get(),
                 0u64,
-                &bond_cache.bond_amount,
+                &bond_cache.remaining_amount,
             );
             // clear compensations as the entire bond is withdrawn
             // compensation_cache.clear();
