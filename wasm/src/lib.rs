@@ -26,13 +26,6 @@ multiversx_sc_wasm_adapter::endpoints! {
         renew => renew
         proof => add_proof
         claimRefund => claim_refund
-        getAcceptedCallers => accepted_callers
-        getBondPaymentToken => bond_payment_token
-        getLockPeriods => lock_periods
-        getLockPeriodBondAmount => lock_period_bond_amount
-        getMinimumPenalty => minimum_penalty
-        getMaximumPenalty => maximum_penalty
-        getWithdrawPenalty => withdraw_penalty
         getCompensationBlacklist => compensation_blacklist
         getBond => get_bond
         getCompensation => get_compensation
@@ -66,6 +59,13 @@ multiversx_sc_wasm_adapter::endpoints! {
         setAdministrator => set_administrator
         getContractState => contract_state
         getAdministrator => administrator
+        getAcceptedCallers => accepted_callers
+        getBondPaymentToken => bond_payment_token
+        getLockPeriods => lock_periods
+        getLockPeriodBondAmount => lock_period_bond_amount
+        getMinimumPenalty => minimum_penalty
+        getMaximumPenalty => maximum_penalty
+        getWithdrawPenalty => withdraw_penalty
     )
 }
 

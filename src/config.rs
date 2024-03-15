@@ -39,14 +39,6 @@ pub trait ConfigModule: storage::StorageModule + events::EventsModule {
         self.administrator().set(administrator);
     }
 
-    #[view(getContractState)]
-    #[storage_mapper("contract_state")]
-    fn contract_state(&self) -> SingleValueMapper<State>;
-
-    #[view(getAdministrator)]
-    #[storage_mapper("administrator")]
-    fn administrator(&self) -> SingleValueMapper<ManagedAddress>;
-
     #[inline]
     fn is_contract_owner(&self, address: &ManagedAddress) -> bool {
         &(self.blockchain().get_owner_address()) == address
@@ -88,4 +80,40 @@ pub trait ConfigModule: storage::StorageModule + events::EventsModule {
     fn is_state_active(&self, state: State) -> bool {
         state == State::Active
     }
+
+    #[view(getContractState)]
+    #[storage_mapper("contract_state")]
+    fn contract_state(&self) -> SingleValueMapper<State>;
+
+    #[view(getAdministrator)]
+    #[storage_mapper("administrator")]
+    fn administrator(&self) -> SingleValueMapper<ManagedAddress>;
+
+    #[view(getAcceptedCallers)]
+    #[storage_mapper("accepted_callers")]
+    fn accepted_callers(&self) -> UnorderedSetMapper<ManagedAddress>;
+
+    #[view(getBondPaymentToken)]
+    #[storage_mapper("bond_payment_token")]
+    fn bond_payment_token(&self) -> SingleValueMapper<TokenIdentifier>;
+
+    #[view(getLockPeriods)]
+    #[storage_mapper("lock_periods")]
+    fn lock_periods(&self) -> SetMapper<u64>;
+
+    #[view(getLockPeriodBondAmount)]
+    #[storage_mapper("lock_period_bond_amount")]
+    fn lock_period_bond_amount(&self, lock_period: u64) -> SingleValueMapper<BigUint>;
+
+    #[view(getMinimumPenalty)]
+    #[storage_mapper("minimum_penalty")]
+    fn minimum_penalty(&self) -> SingleValueMapper<u64>;
+
+    #[view(getMaximumPenalty)]
+    #[storage_mapper("maximum_penalty")]
+    fn maximum_penalty(&self) -> SingleValueMapper<u64>;
+
+    #[view(getWithdrawPenalty)]
+    #[storage_mapper("withdraw_penalty")]
+    fn withdraw_penalty(&self) -> SingleValueMapper<u64>;
 }

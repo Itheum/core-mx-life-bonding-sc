@@ -91,33 +91,12 @@ pub struct Refund<M: ManagedTypeApi> {
 
 #[multiversx_sc::module]
 pub trait StorageModule {
-    #[view(getAcceptedCallers)]
-    #[storage_mapper("accepted_callers")]
-    fn accepted_callers(&self) -> UnorderedSetMapper<ManagedAddress>;
+    // Compensation storage
+    #[storage_mapper("compensations_ids")]
+    fn compensations_ids(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
 
-    #[view(getBondPaymentToken)]
-    #[storage_mapper("bond_payment_token")]
-    fn bond_payment_token(&self) -> SingleValueMapper<TokenIdentifier>;
-
-    #[view(getLockPeriods)]
-    #[storage_mapper("lock_periods")]
-    fn lock_periods(&self) -> SetMapper<u64>;
-
-    #[view(getLockPeriodBondAmount)]
-    #[storage_mapper("lock_period_bond_amount")]
-    fn lock_period_bond_amount(&self, lock_period: u64) -> SingleValueMapper<BigUint>;
-
-    #[view(getMinimumPenalty)]
-    #[storage_mapper("minimum_penalty")]
-    fn minimum_penalty(&self) -> SingleValueMapper<u64>;
-
-    #[view(getMaximumPenalty)]
-    #[storage_mapper("maximum_penalty")]
-    fn maximum_penalty(&self) -> SingleValueMapper<u64>;
-
-    #[view(getWithdrawPenalty)]
-    #[storage_mapper("withdraw_penalty")]
-    fn withdraw_penalty(&self) -> SingleValueMapper<u64>;
+    #[storage_mapper("compensations_ids")]
+    fn compensations(&self) -> UnorderedSetMapper<u64>;
 
     #[storage_mapper("compensation_token_identifer")]
     fn compensation_token_identifer(
@@ -141,11 +120,12 @@ pub trait StorageModule {
     #[storage_mapper("refund_blacklist")]
     fn compensation_blacklist(&self, compensation_id: u64) -> UnorderedSetMapper<ManagedAddress>;
 
-    #[storage_mapper("compensations_ids")]
-    fn compensations_ids(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
+    // Bond storage
+    #[storage_mapper("bonds_ids")]
+    fn bonds_ids(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
 
-    #[storage_mapper("compensations_ids")]
-    fn compensations(&self) -> UnorderedSetMapper<u64>;
+    #[storage_mapper("bonds")]
+    fn bonds(&self) -> UnorderedSetMapper<u64>;
 
     #[storage_mapper("bond_address")]
     fn bond_address(&self, bond_id: u64) -> SingleValueMapper<ManagedAddress>;
@@ -171,14 +151,8 @@ pub trait StorageModule {
     #[storage_mapper("remaining_amount")]
     fn remaining_amount(&self, bond_id: u64) -> SingleValueMapper<BigUint>;
 
-    #[storage_mapper("bonds_ids")]
-    fn bonds_ids(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
-
     #[storage_mapper("address_bonds")]
     fn address_bonds(&self, address: &ManagedAddress) -> UnorderedSetMapper<u64>;
-
-    #[storage_mapper("bonds")]
-    fn bonds(&self) -> UnorderedSetMapper<u64>;
 
     #[storage_mapper("address_refund")]
     fn address_refund(
