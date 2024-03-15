@@ -5,9 +5,9 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           46
+// Endpoints:                           47
 // Async Callback (empty):               1
-// Total number of exported functions:  48
+// Total number of exported functions:  49
 
 #![no_std]
 #![allow(internal_features)]
@@ -26,13 +26,6 @@ multiversx_sc_wasm_adapter::endpoints! {
         renew => renew
         proof => add_proof
         claimRefund => claim_refund
-        getAcceptedCallers => accepted_callers
-        getBondPaymentToken => bond_payment_token
-        getLockPeriods => lock_periods
-        getLockPeriodBondAmount => lock_period_bond_amount
-        getMinimumPenalty => minimum_penalty
-        getMaximumPenalty => maximum_penalty
-        getWithdrawPenalty => withdraw_penalty
         getCompensationBlacklist => compensation_blacklist
         getBond => get_bond
         getCompensation => get_compensation
@@ -48,6 +41,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getCompensationsLen => get_compensations_len
         getLockPeriodsBonds => get_lock_periods_bonds
         getContractConfiguration => get_contract_configuration
+        initiateBond => initiate_bond_for_address
         setBlacklist => add_to_black_list
         removeBlacklist => remove_from_black_list
         initiateRefund => initiate_refund
@@ -58,7 +52,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         setAcceptedCallers => set_accepted_callers
         removeAcceptedCallers => remove_accepted_callers
         setBondToken => set_bond_token
-        setPeriodsBonds => set_lock_periods_with_bonds
+        addPeriodsBonds => add_lock_periods_with_bonds
         removePeriodsBonds => remove_lock_periods_with_bonds
         setMinimumPenalty => set_minimum_penalty
         setMaximumPenalty => set_maximum_penalty
@@ -66,6 +60,13 @@ multiversx_sc_wasm_adapter::endpoints! {
         setAdministrator => set_administrator
         getContractState => contract_state
         getAdministrator => administrator
+        getAcceptedCallers => accepted_callers
+        getBondPaymentToken => bond_payment_token
+        getLockPeriods => lock_periods
+        getLockPeriodBondAmount => lock_period_bond_amount
+        getMinimumPenalty => minimum_penalty
+        getMaximumPenalty => maximum_penalty
+        getWithdrawPenalty => withdraw_penalty
     )
 }
 

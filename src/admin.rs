@@ -5,8 +5,9 @@ use crate::{
         compensation_cache::{self, CompensationCache},
     },
     errors::{
+        ERR_ALREADY_ACTIVE, ERR_ALREADY_INACTIVE, ERR_ALREADY_IN_STORAGE,
         ERR_COMPENSATION_NOT_FOUND, ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP,
-        ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
+        ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_IN_STORAGE, ERR_NOT_PRIVILEGED,
     },
     events, only_privileged,
     storage::{self, PenaltyType},
@@ -19,6 +20,22 @@ multiversx_sc::derive_imports!();
 pub trait AdminModule:
     crate::config::ConfigModule + storage::StorageModule + events::EventsModule
 {
+    #[endpoint(initiateBond)]
+    fn initiate_bond_for_address(
+        &self,
+        address: ManagedAddress,
+        token_identifier: TokenIdentifier,
+        nonce: u64,
+    ) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+
+        let bond_id = self
+            .bonds_ids()
+            .get_id_or_insert((token_identifier.clone(), nonce));
+
+        self.address_bonds(&address).insert(bond_id);
+    }
+
     #[endpoint(setBlacklist)]
     fn add_to_black_list(
         &self,
@@ -35,6 +52,12 @@ pub trait AdminModule:
         self.add_to_blacklist_event(&compensation_id, &addresses);
 
         for address in addresses.into_iter() {
+            if self
+                .compensation_blacklist(compensation_id)
+                .contains(&address)
+            {
+                sc_panic!(ERR_ALREADY_IN_STORAGE);
+            }
             self.compensation_blacklist(compensation_id).insert(address);
         }
     }
@@ -55,6 +78,12 @@ pub trait AdminModule:
         self.remove_from_blacklist_event(&compensation_id, &addresses);
 
         for address in addresses.into_iter() {
+            if !self
+                .compensation_blacklist(compensation_id)
+                .contains(&address)
+            {
+                sc_panic!(ERR_NOT_IN_STORAGE);
+            }
             self.compensation_blacklist(compensation_id)
                 .swap_remove(&address);
         }
@@ -89,6 +118,10 @@ pub trait AdminModule:
         custom_penalty: OptionalValue<u64>,
     ) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
+
+        if penalty != PenaltyType::Custom {
+            require!(custom_penalty.is_none(), ERR_INVALID_PENALTY_VALUE);
+        }
 
         let bond_id = self
             .bonds_ids()
@@ -154,6 +187,10 @@ pub trait AdminModule:
     #[endpoint(setContractStateActive)]
     fn set_contract_state_active(&self) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
+        require!(
+            self.contract_state().get() == State::Inactive,
+            ERR_ALREADY_ACTIVE
+        );
         self.contract_state().set(State::Active);
         self.contract_state_event(State::Active);
     }
@@ -161,6 +198,10 @@ pub trait AdminModule:
     #[endpoint(setContractStateInactive)]
     fn set_contract_state_inactive(&self) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
+        require!(
+            self.contract_state().get() == State::Active,
+            ERR_ALREADY_INACTIVE
+        );
         self.contract_state().set(State::Inactive);
         self.contract_state_event(State::Inactive);
     }
@@ -170,6 +211,9 @@ pub trait AdminModule:
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         self.set_accepted_callers_event(&callers);
         for caller in callers.into_iter() {
+            if self.accepted_callers().contains(&caller) {
+                sc_panic!(ERR_ALREADY_IN_STORAGE)
+            }
             self.accepted_callers().insert(caller);
         }
     }
@@ -179,6 +223,9 @@ pub trait AdminModule:
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         self.remove_accepted_callers_event(&callers);
         for caller in callers.into_iter() {
+            if !self.accepted_callers().contains(&caller) {
+                sc_panic!(ERR_NOT_IN_STORAGE)
+            }
             self.accepted_callers().swap_remove(&caller);
         }
     }
@@ -194,11 +241,16 @@ pub trait AdminModule:
         self.bond_payment_token().set(token_identifier);
     }
 
-    #[endpoint(setPeriodsBonds)]
-    fn set_lock_periods_with_bonds(&self, args: MultiValueEncoded<MultiValue2<u64, BigUint>>) {
+    #[endpoint(addPeriodsBonds)]
+    fn add_lock_periods_with_bonds(&self, args: MultiValueEncoded<MultiValue2<u64, BigUint>>) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         for input in args.into_iter() {
             let (lock_period, bond) = input.into_tuple();
+
+            if self.lock_periods().contains(&lock_period) {
+                sc_panic!(ERR_ALREADY_IN_STORAGE);
+            }
+
             self.set_period_and_bond_event(&lock_period, &bond);
             self.lock_periods().insert(lock_period);
             self.lock_period_bond_amount(lock_period).set(bond);
@@ -209,6 +261,9 @@ pub trait AdminModule:
     fn remove_lock_periods_with_bonds(&self, lock_periods: MultiValueEncoded<u64>) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         for period in lock_periods.into_iter() {
+            if !self.lock_periods().contains(&period) {
+                sc_panic!(ERR_NOT_IN_STORAGE);
+            }
             self.remove_period_and_bond_event(&period, &self.lock_period_bond_amount(period).get());
             self.lock_periods().remove(&period);
             self.lock_period_bond_amount(period).clear();

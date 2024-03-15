@@ -1,5 +1,3 @@
-// [TO DO] implement events for endpoints
-
 use multiversx_sc::types::MultiValueEncoded;
 
 use crate::{

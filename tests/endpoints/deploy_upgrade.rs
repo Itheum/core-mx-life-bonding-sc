@@ -17,8 +17,17 @@ pub fn deploy_and_pause() {
             admin,
             Some(TxExpect::ok()),
         )
-        .pause_contract(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, Some(TxExpect::ok()));
+        .pause_contract(
+            OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+            Some(TxExpect::user_error("str:Already inactive")),
+        );
     state.check_contract_state(State::Inactive);
+
+    state.unpause_contract(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, None);
+    state.unpause_contract(
+        OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+        Some(TxExpect::user_error("str:Already active")),
+    );
 }
 
 #[test]
