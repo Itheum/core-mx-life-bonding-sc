@@ -70,7 +70,7 @@ fn accepted_callers_test() {
     state.set_accepted_caller(
         OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
         minter_address.clone(),
-        None,
+        Some(TxExpect::user_error("str:Already in storage")),
     );
 
     state.remove_accepted_caller(

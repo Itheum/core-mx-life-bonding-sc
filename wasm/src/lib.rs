@@ -58,7 +58,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         setAcceptedCallers => set_accepted_callers
         removeAcceptedCallers => remove_accepted_callers
         setBondToken => set_bond_token
-        setPeriodsBonds => set_lock_periods_with_bonds
+        addPeriodsBonds => add_lock_periods_with_bonds
         removePeriodsBonds => remove_lock_periods_with_bonds
         setMinimumPenalty => set_minimum_penalty
         setMaximumPenalty => set_maximum_penalty

@@ -365,7 +365,7 @@ impl ContractState {
         self.world.sc_call(
             ScCallStep::new()
                 .from(caller)
-                .call(self.contract.set_lock_periods_with_bonds(arg))
+                .call(self.contract.add_lock_periods_with_bonds(arg))
                 .expect(tx_expect),
         );
         self

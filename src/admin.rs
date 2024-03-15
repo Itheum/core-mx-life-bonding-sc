@@ -5,9 +5,9 @@ use crate::{
         compensation_cache::{self, CompensationCache},
     },
     errors::{
-        ERR_ADDRESS_ALREADY_BLACKLISTED, ERR_ADDRESS_NOT_BLACKLISTED, ERR_ALREADY_ACTIVE,
-        ERR_ALREADY_INACTIVE, ERR_COMPENSATION_NOT_FOUND, ERR_INVALID_PENALTY_VALUE,
-        ERR_INVALID_TIMESTAMP, ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
+        ERR_ALREADY_ACTIVE, ERR_ALREADY_INACTIVE, ERR_ALREADY_IN_STORAGE,
+        ERR_COMPENSATION_NOT_FOUND, ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP,
+        ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_IN_STORAGE, ERR_NOT_PRIVILEGED,
     },
     events, only_privileged,
     storage::{self, PenaltyType},
@@ -40,7 +40,7 @@ pub trait AdminModule:
                 .compensation_blacklist(compensation_id)
                 .contains(&address)
             {
-                sc_panic!(ERR_ADDRESS_ALREADY_BLACKLISTED);
+                sc_panic!(ERR_ALREADY_IN_STORAGE);
             }
             self.compensation_blacklist(compensation_id).insert(address);
         }
@@ -66,7 +66,7 @@ pub trait AdminModule:
                 .compensation_blacklist(compensation_id)
                 .contains(&address)
             {
-                sc_panic!(ERR_ADDRESS_NOT_BLACKLISTED);
+                sc_panic!(ERR_NOT_IN_STORAGE);
             }
             self.compensation_blacklist(compensation_id)
                 .swap_remove(&address);
@@ -195,6 +195,9 @@ pub trait AdminModule:
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         self.set_accepted_callers_event(&callers);
         for caller in callers.into_iter() {
+            if self.accepted_callers().contains(&caller) {
+                sc_panic!(ERR_ALREADY_IN_STORAGE)
+            }
             self.accepted_callers().insert(caller);
         }
     }
@@ -204,6 +207,9 @@ pub trait AdminModule:
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         self.remove_accepted_callers_event(&callers);
         for caller in callers.into_iter() {
+            if !self.accepted_callers().contains(&caller) {
+                sc_panic!(ERR_NOT_IN_STORAGE)
+            }
             self.accepted_callers().swap_remove(&caller);
         }
     }
@@ -219,8 +225,8 @@ pub trait AdminModule:
         self.bond_payment_token().set(token_identifier);
     }
 
-    #[endpoint(setPeriodsBonds)]
-    fn set_lock_periods_with_bonds(&self, args: MultiValueEncoded<MultiValue2<u64, BigUint>>) {
+    #[endpoint(addPeriodsBonds)]
+    fn add_lock_periods_with_bonds(&self, args: MultiValueEncoded<MultiValue2<u64, BigUint>>) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         for input in args.into_iter() {
             let (lock_period, bond) = input.into_tuple();
