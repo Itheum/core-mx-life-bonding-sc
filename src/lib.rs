@@ -59,7 +59,7 @@ pub trait LifeBondingContract:
         original_caller: ManagedAddress,
         token_identifier: TokenIdentifier,
         nonce: u64,
-        lock_period: u64, //seconds
+        lock_period_seconds: u64,
     ) {
         require_contract_ready!(self, ERR_CONTRACT_NOT_READY);
         let caller = self.blockchain().get_caller();
@@ -85,36 +85,27 @@ pub trait LifeBondingContract:
             ERR_INVALID_TOKEN_IDENTIFIER
         );
 
-        // check token_identifier is accepted (not really needed as this endpoint will be called by the minting contract)
-
         require!(
-            self.lock_periods().contains(&lock_period),
+            self.lock_periods().contains(&lock_period_seconds),
             ERR_INVALID_LOCK_PERIOD
         );
         require!(
-            !self.lock_period_bond_amount(lock_period).is_empty(),
+            !self.lock_period_bond_amount(lock_period_seconds).is_empty(),
             ERR_INVALID_LOCK_PERIOD
-        ); // check not really needed
+        );
 
-        let bond_amount = self.lock_period_bond_amount(lock_period).get();
+        let bond_amount = self.lock_period_bond_amount(lock_period_seconds).get();
 
         require!(payment.amount == bond_amount, ERR_INVALID_AMOUNT);
 
         let current_timestamp = self.blockchain().get_block_timestamp();
-        let unbound_timestamp = current_timestamp + lock_period;
-
-        // let check_bond_id = self.bonds_ids().get_id((token_identifier.clone(), nonce));
-
-        // require!(
-        //     !self.bonds_ids().contains_id(check_bond_id),
-        //     ERR_BOND_ALREADY_CREATED
-        // );
+        let unbound_timestamp = current_timestamp + lock_period_seconds;
 
         self.bond_address(bond_id).set(original_caller.clone());
         self.bond_token_identifier(bond_id)
             .set(token_identifier.clone());
         self.bond_nonce(bond_id).set(nonce);
-        self.bond_lock_period(bond_id).set(lock_period);
+        self.bond_lock_period(bond_id).set(lock_period_seconds);
         self.bond_timestamp(bond_id).set(current_timestamp);
         self.unbound_timestamp(bond_id).set(unbound_timestamp);
         self.bond_amount(bond_id).set(payment.amount.clone());
@@ -185,10 +176,8 @@ pub trait LifeBondingContract:
                 0u64,
                 &bond_cache.remaining_amount,
             );
-            // clear compensations as the entire bond is withdrawn
-            // compensation_cache.clear();
-            // self.compensations_ids().remove_by_id(compensation_id);
-            self.compensations().swap_remove(&compensation_id); // remove from showing if it's withdrawn
+
+            self.compensations().swap_remove(&compensation_id);
         }
 
         self.withdraw_event(
@@ -198,11 +187,7 @@ pub trait LifeBondingContract:
             &penalty_amount,
         );
 
-        // Do not clear bond totally as creator can come and bond/renew again
-        // bond_cache.clear();
-        // self.bonds_ids().remove_by_id(bond_id);
-        // self.address_bonds(&caller).swap_remove(&bond_id);
-        self.bonds().swap_remove(&bond_id); // remove from showing if it's withdrawn
+        self.bonds().swap_remove(&bond_id);
     }
 
     #[endpoint(renew)]
@@ -281,7 +266,7 @@ pub trait LifeBondingContract:
         let current_timestamp = self.blockchain().get_block_timestamp();
 
         require!(
-            current_timestamp > compensation_cache.end_date + COMPENSATION_SAFE_PERIOD, // 86_400 seconds safe period for black list to be uploaded
+            current_timestamp > compensation_cache.end_date + COMPENSATION_SAFE_PERIOD,
             ERR_INVALID_TIMELINE_TO_REFUND
         );
 
@@ -297,7 +282,7 @@ pub trait LifeBondingContract:
             let address_refund = self.address_refund(&caller, compensation_id).get();
 
             self.send()
-                .direct_non_zero_esdt_payment(&caller, &address_refund.proof_of_refund); // sending back the nfts
+                .direct_non_zero_esdt_payment(&caller, &address_refund.proof_of_refund);
 
             compensation_cache.proof_amount -= &address_refund.proof_of_refund.amount;
             self.compensation_blacklist(compensation_id)
@@ -351,14 +336,10 @@ pub trait LifeBondingContract:
             self.address_refund(&caller, compensation_id).clear();
         }
 
-        if compensation_cache.accumulated_amount == BigUint::zero() // remove compensation if there is no more accumulated amount
+        if compensation_cache.accumulated_amount == BigUint::zero()
             && compensation_cache.proof_amount == BigUint::zero()
         {
-            self.compensations().swap_remove(&compensation_id); // remove from showing if it's empty
-
-            // Do not clear compensation totally as creator can come and bond/renew again
-            // compensation_cache.clear();
-            // self.compensations_ids().remove_by_id(compensation_id);
+            self.compensations().swap_remove(&compensation_id);
         }
     }
 }
