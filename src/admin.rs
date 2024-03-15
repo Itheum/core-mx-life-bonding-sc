@@ -20,6 +20,22 @@ multiversx_sc::derive_imports!();
 pub trait AdminModule:
     crate::config::ConfigModule + storage::StorageModule + events::EventsModule
 {
+    #[endpoint(initiateBond)]
+    fn initiate_bond_for_address(
+        &self,
+        address: ManagedAddress,
+        token_identifier: TokenIdentifier,
+        nonce: u64,
+    ) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+
+        let bond_id = self
+            .bonds_ids()
+            .get_id_or_insert((token_identifier.clone(), nonce));
+
+        self.address_bonds(&address).insert(bond_id);
+    }
+
     #[endpoint(setBlacklist)]
     fn add_to_black_list(
         &self,
