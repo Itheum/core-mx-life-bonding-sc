@@ -5,8 +5,9 @@ use crate::{
         compensation_cache::{self, CompensationCache},
     },
     errors::{
-        ERR_COMPENSATION_NOT_FOUND, ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP,
-        ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
+        ERR_ADDRESS_ALREADY_BLACKLISTED, ERR_ADDRESS_NOT_BLACKLISTED, ERR_COMPENSATION_NOT_FOUND,
+        ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP, ERR_INVALID_TOKEN_IDENTIFIER,
+        ERR_NOT_PRIVILEGED,
     },
     events, only_privileged,
     storage::{self, PenaltyType},
@@ -35,6 +36,12 @@ pub trait AdminModule:
         self.add_to_blacklist_event(&compensation_id, &addresses);
 
         for address in addresses.into_iter() {
+            if self
+                .compensation_blacklist(compensation_id)
+                .contains(&address)
+            {
+                sc_panic!(ERR_ADDRESS_ALREADY_BLACKLISTED);
+            }
             self.compensation_blacklist(compensation_id).insert(address);
         }
     }
@@ -55,6 +62,12 @@ pub trait AdminModule:
         self.remove_from_blacklist_event(&compensation_id, &addresses);
 
         for address in addresses.into_iter() {
+            if !self
+                .compensation_blacklist(compensation_id)
+                .contains(&address)
+            {
+                sc_panic!(ERR_ADDRESS_NOT_BLACKLISTED);
+            }
             self.compensation_blacklist(compensation_id)
                 .swap_remove(&address);
         }

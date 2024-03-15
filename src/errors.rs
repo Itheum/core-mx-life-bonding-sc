@@ -15,3 +15,5 @@ pub const ERR_INVALID_TIMELINE_TO_REFUND: &str = "Invalid timeline to refund";
 pub const ERR_REFUND_NOT_FOUND: &str = "Refund not found";
 pub const ERR_INVALID_TIMESTAMP: &str = "Invalid timestamp";
 pub const ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT: &str = "Penalties exceed withdrawal amount";
+pub const ERR_ADDRESS_ALREADY_BLACKLISTED: &str = "Address already blacklisted";
+pub const ERR_ADDRESS_NOT_BLACKLISTED: &str = "Address not blacklisted";
