@@ -103,6 +103,10 @@ pub trait AdminModule:
     ) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
 
+        if penalty != PenaltyType::Custom {
+            require!(custom_penalty.is_none(), ERR_INVALID_PENALTY_VALUE);
+        }
+
         let bond_id = self
             .bonds_ids()
             .get_id_non_zero((token_identifier.clone(), nonce));
