@@ -1,4 +1,4 @@
-use crate::{events, storage};
+use crate::{errors::ERR_ALREADY_IN_STORAGE, events, storage};
 
 multiversx_sc::imports!();
 multiversx_sc::derive_imports!();
@@ -29,6 +29,13 @@ pub trait ConfigModule: storage::StorageModule + events::EventsModule {
     #[endpoint(setAdministrator)]
     fn set_administrator(&self, administrator: ManagedAddress) {
         self.set_administrator_event(&administrator);
+
+        if !self.administrator().is_empty() {
+            require!(
+                administrator != self.administrator().get(),
+                ERR_ALREADY_IN_STORAGE
+            );
+        }
         self.administrator().set(administrator);
     }
 
