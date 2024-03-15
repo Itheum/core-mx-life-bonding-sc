@@ -230,6 +230,11 @@ pub trait AdminModule:
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         for input in args.into_iter() {
             let (lock_period, bond) = input.into_tuple();
+
+            if self.lock_periods().contains(&lock_period) {
+                sc_panic!(ERR_ALREADY_IN_STORAGE);
+            }
+
             self.set_period_and_bond_event(&lock_period, &bond);
             self.lock_periods().insert(lock_period);
             self.lock_period_bond_amount(lock_period).set(bond);
@@ -240,6 +245,9 @@ pub trait AdminModule:
     fn remove_lock_periods_with_bonds(&self, lock_periods: MultiValueEncoded<u64>) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         for period in lock_periods.into_iter() {
+            if !self.lock_periods().contains(&period) {
+                sc_panic!(ERR_NOT_IN_STORAGE);
+            }
             self.remove_period_and_bond_event(&period, &self.lock_period_bond_amount(period).get());
             self.lock_periods().remove(&period);
             self.lock_period_bond_amount(period).clear();

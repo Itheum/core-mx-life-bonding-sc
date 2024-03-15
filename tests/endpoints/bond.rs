@@ -107,6 +107,7 @@ fn bond() {
     );
 
     state
+        .remove_lock_period_and_bond(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, 10u64, None)
         .default_deploy_and_set(10u64, 100u64)
         .remove_accepted_caller(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, admin.clone(), None)
         .set_accepted_caller(
