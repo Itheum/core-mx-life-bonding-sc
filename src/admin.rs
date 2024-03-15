@@ -5,9 +5,9 @@ use crate::{
         compensation_cache::{self, CompensationCache},
     },
     errors::{
-        ERR_ADDRESS_ALREADY_BLACKLISTED, ERR_ADDRESS_NOT_BLACKLISTED, ERR_COMPENSATION_NOT_FOUND,
-        ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP, ERR_INVALID_TOKEN_IDENTIFIER,
-        ERR_NOT_PRIVILEGED,
+        ERR_ADDRESS_ALREADY_BLACKLISTED, ERR_ADDRESS_NOT_BLACKLISTED, ERR_ALREADY_ACTIVE,
+        ERR_ALREADY_INACTIVE, ERR_COMPENSATION_NOT_FOUND, ERR_INVALID_PENALTY_VALUE,
+        ERR_INVALID_TIMESTAMP, ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_PRIVILEGED,
     },
     events, only_privileged,
     storage::{self, PenaltyType},
@@ -171,6 +171,10 @@ pub trait AdminModule:
     #[endpoint(setContractStateActive)]
     fn set_contract_state_active(&self) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
+        require!(
+            self.contract_state().get() == State::Inactive,
+            ERR_ALREADY_ACTIVE
+        );
         self.contract_state().set(State::Active);
         self.contract_state_event(State::Active);
     }
@@ -178,6 +182,10 @@ pub trait AdminModule:
     #[endpoint(setContractStateInactive)]
     fn set_contract_state_inactive(&self) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
+        require!(
+            self.contract_state().get() == State::Active,
+            ERR_ALREADY_INACTIVE
+        );
         self.contract_state().set(State::Inactive);
         self.contract_state_event(State::Inactive);
     }

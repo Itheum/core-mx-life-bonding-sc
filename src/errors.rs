@@ -17,3 +17,5 @@ pub const ERR_INVALID_TIMESTAMP: &str = "Invalid timestamp";
 pub const ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT: &str = "Penalties exceed withdrawal amount";
 pub const ERR_ADDRESS_ALREADY_BLACKLISTED: &str = "Address already blacklisted";
 pub const ERR_ADDRESS_NOT_BLACKLISTED: &str = "Address not blacklisted";
+pub const ERR_ALREADY_ACTIVE: &str = "Already active";
+pub const ERR_ALREADY_INACTIVE: &str = "Already inactive";
