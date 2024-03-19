@@ -92,7 +92,7 @@ pub struct Refund<M: ManagedTypeApi> {
 #[multiversx_sc::module]
 pub trait StorageModule {
     // Compensation storage
-    #[storage_mapper("compensations_ids")]
+    #[storage_mapper("compensations_tokens_nonces")]
     fn compensations_ids(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
 
     #[storage_mapper("compensations_ids")]
