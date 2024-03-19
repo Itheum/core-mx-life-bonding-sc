@@ -1,8 +1,8 @@
 PROXY=https://devnet-gateway.multiversx.com
 CHAIN_ID="D"
 
-WALLET="../wallet2.pem"
-USER="../wallet2.pem"
+WALLET="./wallet.pem"
+USER="./wallet2.pem"
 
 ADDRESS=$(mxpy data load --key=address-devnet)
 DEPLOY_TRANSACTION=$(mxpy data load --key=deployTransaction-devnet)
@@ -11,12 +11,12 @@ TOKEN="ITHEUM-fce905"
 TOKEN_HEX="0x$(echo -n ${TOKEN} | xxd -p -u | tr -d '\n')"
 
 # to deploy from last reprodubible build, we need to change or vice versa
-# --bytecode output/datanftmint.wasm \
+# --bytecode output/core-mx-life-bonding-sc.wasm \
 # to 
-# --bytecode output-docker/datanftmint/datanftmint.wasm \
+# --bytecode output-docker/core-mx-life-bonding-sc/core-mx-life-bonding-sc.wasm \
 deploy(){
     mxpy --verbose contract deploy \
-    --bytecode output/core-mx-life-bonding-sc.wasm \
+    --bytecode output-docker/core-mx-life-bonding-sc/core-mx-life-bonding-sc.wasm \
     --outfile deployOutput \
     --metadata-not-readable \
     --metadata-payable-by-sc \
@@ -53,6 +53,15 @@ upgrade(){
     --send || return
 }
 
+# if you interact without calling deploy(), then you need to 1st run this to restore the vars from data
+restoreDeployData() {
+  TRANSACTION=$(mxpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['emittedTransactionHash']")
+  ADDRESS=$(mxpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['contractAddress']")
+
+  # after we upgraded to mxpy 8.1.2, mxpy data parse seems to load the ADDRESS correctly but it breaks when used below with a weird "Bad address" error
+  # so, we just hardcode the ADDRESS here. Just make sure you use the "data['contractAddress'] from the latest deploy-devnet.interaction.json file
+  ADDRESS="erd1qqqqqqqqqqqqqpgq4xqxlq8p8zenrq4f0htgcwjzdlwmrhwdfsxsmavcuq"
+}
 
 setAdministrator(){
     # $1 = address
@@ -70,7 +79,6 @@ setAdministrator(){
     --send || return
 }
 
-
 setContractStateActive(){
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
@@ -81,7 +89,6 @@ setContractStateActive(){
     --chain ${CHAIN_ID} \
     --send || return
 }
-
 
 setContractStateInactive(){
     mxpy --verbose contract call ${ADDRESS} \
@@ -94,10 +101,7 @@ setContractStateInactive(){
     --send || return
 }
 
-
-
 setAcceptedCallers(){
-
     # $1 = address
 
     address="0x$(mxpy wallet bech32 --decode ${1})"
@@ -113,9 +117,7 @@ setAcceptedCallers(){
     --send || return
 }
 
-
 setBondToken(){
-
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
     --pem=${WALLET} \
@@ -127,11 +129,9 @@ setBondToken(){
     --send || return
 }
 
-
-setPeriodsBonds(){
-    
+setPeriodsBonds(){    
     # $1 = lockPeriod
-    # $2 = bonds
+    # $2 = bond
 
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
@@ -144,9 +144,7 @@ setPeriodsBonds(){
     --send || return
 }
 
-
 setMinimumPenalty(){
-
     # $1 = minimumPenalty
 
     mxpy --verbose contract call ${ADDRESS} \
@@ -158,11 +156,9 @@ setMinimumPenalty(){
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
-
 }
 
-setMaximumPenalty(){
-    
+setMaximumPenalty(){ 
     # $1 = maximumPenalty
 
     mxpy --verbose contract call ${ADDRESS} \
@@ -177,7 +173,6 @@ setMaximumPenalty(){
 }
 
 setWithdrawPenalty(){
-    
     # $1 = withdrawPenalty
 
     mxpy --verbose contract call ${ADDRESS} \
@@ -190,8 +185,6 @@ setWithdrawPenalty(){
     --chain ${CHAIN_ID} \
     --send || return
 }
-
-
 
 sanction(){
     # $1 = token identifier
@@ -212,9 +205,7 @@ sanction(){
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
-
 }
-
 
 modifyBond(){
     # $1 = token identifier
@@ -231,13 +222,9 @@ modifyBond(){
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
-
 }
 
-
-
 withdraw(){
-
     # $1 = token identifier
     # $2 = nonce 
 
@@ -252,12 +239,9 @@ withdraw(){
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return
-
 }
 
-
-renew(){
-    
+renew(){    
     # $1 = token identifier
     # $2 = nonce 
 
@@ -274,10 +258,7 @@ renew(){
     --send || return
 }
 
-
-
-renewWithNewLockPeriod(){
-        
+renewWithNewLockPeriod(){     
     # $1 = token identifier
     # $2 = nonce 
     # $3 = lockPeriod
