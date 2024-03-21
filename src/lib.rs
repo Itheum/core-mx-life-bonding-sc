@@ -157,9 +157,8 @@ pub trait LifeBondingContract:
                 * &BigUint::from(self.withdraw_penalty().get())
                 / &BigUint::from(10_000u64);
 
-            if &bond_cache.bond_amount - &penalty_amount < compensation_cache.accumulated_amount {
-                sc_panic!(ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT);
-            }
+            require!(&bond_cache.remaining_amount > &penalty_amount, ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT);
+            require!(&bond_cache.remaining_amount - &penalty_amount >= compensation_cache.accumulated_amount,ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT);
 
             self.send().direct_esdt(
                 &caller,

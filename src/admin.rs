@@ -52,12 +52,7 @@ pub trait AdminModule:
         self.add_to_blacklist_event(&compensation_id, &addresses);
 
         for address in addresses.into_iter() {
-            if self
-                .compensation_blacklist(compensation_id)
-                .contains(&address)
-            {
-                sc_panic!(ERR_ALREADY_IN_STORAGE);
-            }
+            require!(!self.compensation_blacklist(compensation_id).contains(&address), ERR_ALREADY_IN_STORAGE);
             self.compensation_blacklist(compensation_id).insert(address);
         }
     }
@@ -78,12 +73,7 @@ pub trait AdminModule:
         self.remove_from_blacklist_event(&compensation_id, &addresses);
 
         for address in addresses.into_iter() {
-            if !self
-                .compensation_blacklist(compensation_id)
-                .contains(&address)
-            {
-                sc_panic!(ERR_NOT_IN_STORAGE);
-            }
+            require!(self.compensation_blacklist(compensation_id).contains(&address), ERR_NOT_IN_STORAGE);
             self.compensation_blacklist(compensation_id)
                 .swap_remove(&address);
         }
@@ -211,9 +201,7 @@ pub trait AdminModule:
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         self.set_accepted_callers_event(&callers);
         for caller in callers.into_iter() {
-            if self.accepted_callers().contains(&caller) {
-                sc_panic!(ERR_ALREADY_IN_STORAGE)
-            }
+            require!(!self.accepted_callers().contains(&caller), ERR_ALREADY_IN_STORAGE);
             self.accepted_callers().insert(caller);
         }
     }
@@ -223,9 +211,7 @@ pub trait AdminModule:
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         self.remove_accepted_callers_event(&callers);
         for caller in callers.into_iter() {
-            if !self.accepted_callers().contains(&caller) {
-                sc_panic!(ERR_NOT_IN_STORAGE)
-            }
+            require!(self.accepted_callers().contains(&caller), ERR_NOT_IN_STORAGE);
             self.accepted_callers().swap_remove(&caller);
         }
     }
@@ -247,9 +233,7 @@ pub trait AdminModule:
         for input in args.into_iter() {
             let (lock_period, bond) = input.into_tuple();
 
-            if self.lock_periods().contains(&lock_period) {
-                sc_panic!(ERR_ALREADY_IN_STORAGE);
-            }
+            require!(!self.lock_periods().contains(&lock_period), ERR_ALREADY_IN_STORAGE);
 
             self.set_period_and_bond_event(&lock_period, &bond);
             self.lock_periods().insert(lock_period);
@@ -261,9 +245,7 @@ pub trait AdminModule:
     fn remove_lock_periods_with_bonds(&self, lock_periods: MultiValueEncoded<u64>) {
         only_privileged!(self, ERR_NOT_PRIVILEGED);
         for period in lock_periods.into_iter() {
-            if !self.lock_periods().contains(&period) {
-                sc_panic!(ERR_NOT_IN_STORAGE);
-            }
+            require!(self.lock_periods().contains(&period), ERR_NOT_IN_STORAGE);
             self.remove_period_and_bond_event(&period, &self.lock_period_bond_amount(period).get());
             self.lock_periods().remove(&period);
             self.lock_period_bond_amount(period).clear();
