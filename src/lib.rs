@@ -164,7 +164,7 @@ pub trait LifeBondingContract:
                 &caller,
                 &self.bond_payment_token().get(),
                 0u64,
-                &(&bond_cache.bond_amount - &penalty_amount),
+                &(&bond_cache.remaining_amount - &penalty_amount),
             );
 
             compensation_cache.accumulated_amount += &penalty_amount;
