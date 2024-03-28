@@ -319,7 +319,7 @@ checksum = "06ea2b9bc92be3c2baa9334a323ebca2d6f074ff852cd1d7b11064035cd3868f"
 
 [[package]]
 name = "core-mx-life-bonding-sc"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "multiversx-sc",
  "multiversx-sc-scenario",
@@ -327,7 +327,7 @@ dependencies = [
 
 [[package]]
 name = "core-mx-life-bonding-sc-meta"
-version = "0.0.0"
+version = "1.0.0"
 dependencies = [
  "core-mx-life-bonding-sc",
  "multiversx-sc-meta",
@@ -938,9 +938,9 @@ checksum = "b59072fa0624b55ae5ae3fa6bfa91515bbeb4ac440214bc4a509e2c8806d6e9f"
 
 [[package]]
 name = "multiversx-sc"
-version = "0.47.4"
+version = "0.47.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40b69a83a9423be4b543edee969205aa43ef4397c48b965a65bad857e022db5c"
+checksum = "34215a81b2c37619a234db4d6facbef5853e4022df3494746b29ada5ff35859f"
 dependencies = [
  "bitflags 2.4.2",
  "hex-literal",
@@ -974,9 +974,9 @@ dependencies = [
 
 [[package]]
 name = "multiversx-sc-derive"
-version = "0.47.4"
+version = "0.47.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5fe6400e2f4e57f7c9c00ad76108794aa962657cf62b4d4f49b99f02d9a6ba5"
+checksum = "c41ce6becb22f45383e9ff60c88fa1f7946d92915c8409e9fbe3c3719325146f"
 dependencies = [
  "hex",
  "proc-macro2",
@@ -987,9 +987,9 @@ dependencies = [
 
 [[package]]
 name = "multiversx-sc-meta"
-version = "0.47.4"
+version = "0.47.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "12dec6cc0735acb48fce290b367c9d22684103055f00a7dec057840fc134973d"
+checksum = "6297142f63e2b6e822d9780510f2ae0a3a19d12efdc928c1c4c90b085ff7fe61"
 dependencies = [
  "clap",
  "colored",
@@ -1014,9 +1014,9 @@ dependencies = [
 
 [[package]]
 name = "multiversx-sc-scenario"
-version = "0.47.4"
+version = "0.47.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b71bc382a5ba02deb9452ec29453806c176200ee5d0e5c7c948f52dc84181382"
+checksum = "342844787f7d617c50e69ec4b1d79e6a4934bb2f0f860e7894e392e2c5fa3ba1"
 dependencies = [
  "base64",
  "bech32",
