@@ -147,6 +147,8 @@ pub trait LifeBondingContract:
 
         let bond_cache = BondCache::new(self, bond_id);
 
+        require!(bond_cache.address == caller, ERR_BOND_NOT_FOUND);
+
         let current_timestamp = self.blockchain().get_block_timestamp();
 
         let mut compensation_cache = CompensationCache::new(self, compensation_id);

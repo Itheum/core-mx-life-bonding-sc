@@ -17,7 +17,7 @@ use multiversx_sc_scenario::{
 use crate::bonding_state::bonding_state::{
     ContractState, BONDING_CONTRACT_ADDRESS_EXPR, DATA_NFT_IDENTIFIER, FIRST_USER_ADDRESS_EXPR,
     ITHEUM_TOKEN_IDENTIFIER, ITHEUM_TOKEN_IDENTIFIER_EXPR, MINTER_CONTRACT_ADDRESS_EXPR,
-    OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+    OWNER_BONDING_CONTRACT_ADDRESS_EXPR, SECOND_USER_ADDRESS_EXPR,
 };
 
 #[test]
@@ -69,6 +69,13 @@ fn withdraw_with_withdraw_penalty_test() {
         None,
     );
 
+    state.withdraw(
+        SECOND_USER_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        Some(TxExpect::user_error("str:Bond not found")),
+    );
+
     state.withdraw(FIRST_USER_ADDRESS_EXPR, DATA_NFT_IDENTIFIER, 1u64, None);
 
     state
@@ -111,6 +118,7 @@ fn withdraw_with_withdraw_penalty_test() {
 fn withdraw_after_penalty_was_enforced_test() {
     let mut state = ContractState::new();
     let first_user_address = state.first_user_address.clone();
+    let second_user_address = state.second_user_address.clone();
     let admin = state.admin.clone();
 
     state
@@ -159,6 +167,70 @@ fn withdraw_after_penalty_was_enforced_test() {
             "str:Penalties exceed withdrawal amount",
         )),
     );
+
+    state.world.transfer_step(
+        // mocks the mint call in minter and transfers the bond amount
+        TransferStep::new()
+            .from(SECOND_USER_ADDRESS_EXPR)
+            .to(MINTER_CONTRACT_ADDRESS_EXPR)
+            .esdt_transfer(ITHEUM_TOKEN_IDENTIFIER, 0u64, 100u64),
+    );
+
+    state.bond(
+        MINTER_CONTRACT_ADDRESS_EXPR,
+        second_user_address.clone(),
+        DATA_NFT_IDENTIFIER,
+        2u64,
+        10u64,
+        (ITHEUM_TOKEN_IDENTIFIER_EXPR, 0u64, 100u64),
+        None,
+    );
+
+    state.sanction(
+        OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+        DATA_NFT_IDENTIFIER,
+        2u64,
+        PenaltyType::Minimum,
+        OptionalValue::None,
+        None,
+    );
+
+    state
+        .world
+        .set_state_step(SetStateStep::new().block_timestamp(11u64));
+
+    state.withdraw(SECOND_USER_ADDRESS_EXPR, DATA_NFT_IDENTIFIER, 2u64, None);
+
+    state
+        .world
+        .check_state_step(CheckStateStep::new().put_account(
+            SECOND_USER_ADDRESS_EXPR,
+            CheckAccount::new().esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "95"), // 5% penalty
+        ));
+
+    state
+        .world
+        .check_state_step(CheckStateStep::new().put_account(
+            BONDING_CONTRACT_ADDRESS_EXPR,
+            CheckAccount::new().esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "105"),
+        ));
+
+    // after unbound period
+    state.withdraw(FIRST_USER_ADDRESS_EXPR, DATA_NFT_IDENTIFIER, 1u64, None);
+
+    state
+        .world
+        .check_state_step(CheckStateStep::new().put_account(
+            FIRST_USER_ADDRESS_EXPR,
+            CheckAccount::new().esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "70"), //30 % penalty
+        ));
+
+    state
+        .world
+        .check_state_step(CheckStateStep::new().put_account(
+            BONDING_CONTRACT_ADDRESS_EXPR,
+            CheckAccount::new().esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "35"), // 30% first user penalty + 5% second user penalty
+        ));
 }
 
 #[test]
