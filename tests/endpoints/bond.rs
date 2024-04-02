@@ -11,9 +11,9 @@ use multiversx_sc_scenario::{
 };
 
 use crate::bonding_state::bonding_state::{
-    ContractState, ANOTHER_TOKEN_IDENTIFIER_EXPR, BONDING_CONTRACT_ADDRESS_EXPR,
-    DATA_NFT_IDENTIFIER, FIRST_USER_ADDRESS_EXPR, ITHEUM_TOKEN_IDENTIFIER,
-    ITHEUM_TOKEN_IDENTIFIER_EXPR, MINTER_CONTRACT_ADDRESS_EXPR,
+    ContractState, ADMIN_BONDING_CONTRACT_ADDRESS_EXPR, ANOTHER_TOKEN_IDENTIFIER_EXPR,
+    BONDING_CONTRACT_ADDRESS_EXPR, DATA_NFT_IDENTIFIER, FIRST_USER_ADDRESS_EXPR,
+    ITHEUM_TOKEN_IDENTIFIER, ITHEUM_TOKEN_IDENTIFIER_EXPR, MINTER_CONTRACT_ADDRESS_EXPR,
     OWNER_BONDING_CONTRACT_ADDRESS_EXPR, SECOND_USER_ADDRESS_EXPR,
 };
 
@@ -210,5 +210,53 @@ fn bond() {
                 unbound_timestamp: 10u64,
                 remaining_amount: BigUint::from(100u64),
             }),
+    );
+}
+
+#[test]
+fn initiate_bond_for_another_address() {
+    let mut state = ContractState::new();
+    let first_user_address = state.first_user_address.clone();
+    let admin = state.admin.clone();
+
+    state
+        .default_deploy_and_set(10u64, 100u64)
+        .remove_accepted_caller(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, admin.clone(), None)
+        .set_accepted_caller(
+            OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+            AddressValue::from(MINTER_CONTRACT_ADDRESS_EXPR).to_address(),
+            None,
+        )
+        .unpause_contract(ADMIN_BONDING_CONTRACT_ADDRESS_EXPR, None);
+
+    state.bond(
+        FIRST_USER_ADDRESS_EXPR,
+        first_user_address.clone(),
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        10u64,
+        (ITHEUM_TOKEN_IDENTIFIER_EXPR, 0u64, 100u64),
+        Some(TxExpect::user_error(
+            "str:Endpoint callable only by accepted callers",
+        )),
+    );
+
+    state.initiate_bond_for_address(
+        ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
+        first_user_address.clone(),
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        None,
+    );
+
+    // user can bond for himself (implementation for older mints that don't have bonds)
+    state.bond(
+        FIRST_USER_ADDRESS_EXPR,
+        first_user_address.clone(),
+        DATA_NFT_IDENTIFIER,
+        1u64,
+        10u64,
+        (ITHEUM_TOKEN_IDENTIFIER_EXPR, 0u64, 100u64),
+        None,
     );
 }

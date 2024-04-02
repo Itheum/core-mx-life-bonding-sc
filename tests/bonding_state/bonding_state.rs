@@ -195,6 +195,28 @@ impl ContractState {
         self
     }
 
+    pub fn initiate_bond_for_address(
+        &mut self,
+        caller: &str,
+        address: Address,
+        token_identifier: &[u8],
+        nonce: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
+        self.world.sc_call(
+            ScCallStep::new()
+                .from(caller)
+                .call(self.contract.initiate_bond_for_address(
+                    managed_address!(&address),
+                    managed_token_id!(token_identifier),
+                    nonce,
+                ))
+                .expect(tx_expect),
+        );
+        self
+    }
+
     pub fn pause_contract(&mut self, caller: &str, expect: Option<TxExpect>) -> &mut Self {
         let tx_expect = expect.unwrap_or(TxExpect::ok());
         self.world.sc_call(

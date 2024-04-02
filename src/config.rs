@@ -54,6 +54,11 @@ pub trait ConfigModule: storage::StorageModule + events::EventsModule {
         self.is_contract_owner(address) || self.is_admin(address)
     }
 
+    #[inline]
+    fn is_state_active(&self, state: State) -> bool {
+        state == State::Active
+    }
+
     fn contract_is_ready(&self) -> bool {
         let mut is_ready = true;
 
@@ -74,11 +79,6 @@ pub trait ConfigModule: storage::StorageModule + events::EventsModule {
             is_ready = false;
         }
         is_ready
-    }
-
-    #[inline]
-    fn is_state_active(&self, state: State) -> bool {
-        state == State::Active
     }
 
     #[view(getContractState)]
