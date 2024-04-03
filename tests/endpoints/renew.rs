@@ -83,7 +83,7 @@ fn renew() {
                 nonce: 1u64,
                 lock_period: 10u64,
                 bond_timestamp: 2u64,
-                unbound_timestamp: 12u64,
+                unbond_timestamp: 12u64,
                 bond_amount: managed_biguint!(100u64),
                 remaining_amount: managed_biguint!(100u64),
             }),

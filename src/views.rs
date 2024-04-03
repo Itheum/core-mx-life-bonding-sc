@@ -19,7 +19,7 @@ pub trait ViewsModule:
             nonce: self.bond_nonce(bond_id).get(),
             lock_period: self.bond_lock_period(bond_id).get(),
             bond_timestamp: self.bond_timestamp(bond_id).get(),
-            unbound_timestamp: self.unbound_timestamp(bond_id).get(),
+            unbond_timestamp: self.unbond_timestamp(bond_id).get(),
             bond_amount: self.bond_amount(bond_id).get(),
             remaining_amount: self.remaining_amount(bond_id).get(),
         }

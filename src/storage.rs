@@ -54,7 +54,7 @@ pub struct Bond<M: ManagedTypeApi> {
     pub nonce: u64,
     pub lock_period: u64,
     pub bond_timestamp: u64,
-    pub unbound_timestamp: u64,
+    pub unbond_timestamp: u64,
     pub bond_amount: BigUint<M>,
     pub remaining_amount: BigUint<M>,
 }
@@ -92,10 +92,10 @@ pub struct Refund<M: ManagedTypeApi> {
 #[multiversx_sc::module]
 pub trait StorageModule {
     // Compensation storage
-    #[storage_mapper("compensations_tokens_nonces")]
+    #[storage_mapper("compensations_ids")]
     fn compensations_ids(&self) -> ObjectToIdMapper<Self::Api, (TokenIdentifier, u64)>;
 
-    #[storage_mapper("compensations_ids")]
+    #[storage_mapper("compensations")]
     fn compensations(&self) -> UnorderedSetMapper<u64>;
 
     #[storage_mapper("compensation_token_identifer")]
@@ -117,7 +117,7 @@ pub trait StorageModule {
     fn compensation_end_date(&self, compensation_id: u64) -> SingleValueMapper<u64>;
 
     #[view(getCompensationBlacklist)]
-    #[storage_mapper("refund_blacklist")]
+    #[storage_mapper("compensation_blacklist")]
     fn compensation_blacklist(&self, compensation_id: u64) -> UnorderedSetMapper<ManagedAddress>;
 
     // Bond storage
@@ -142,8 +142,8 @@ pub trait StorageModule {
     #[storage_mapper("bond_timestamp")]
     fn bond_timestamp(&self, bond_id: u64) -> SingleValueMapper<u64>;
 
-    #[storage_mapper("unbound_timestamp")]
-    fn unbound_timestamp(&self, bond_id: u64) -> SingleValueMapper<u64>;
+    #[storage_mapper("unbond_timestamp")]
+    fn unbond_timestamp(&self, bond_id: u64) -> SingleValueMapper<u64>;
 
     #[storage_mapper("bond_amount")]
     fn bond_amount(&self, bond_id: u64) -> SingleValueMapper<BigUint>;

@@ -39,7 +39,7 @@ pub trait EventsModule {
         &self,
         #[indexed] bond_id: &u64,
         #[indexed] caller: &ManagedAddress,
-        #[indexed] unbound_timestmap: &u64,
+        #[indexed] unbond_timestmap: &u64,
     );
 
     #[event("proof_event")]
@@ -98,7 +98,7 @@ pub trait EventsModule {
     );
 
     #[event("modify_bond_event")]
-    fn modify_bond_event(&self, #[indexed] bond_id: &u64, #[indexed] unbound_timestamp: &u64);
+    fn modify_bond_event(&self, #[indexed] bond_id: &u64, #[indexed] unbond_timestamp: &u64);
 
     #[event("set_accepted_callers_event")]
     fn set_accepted_callers_event(&self, #[indexed] callers: &MultiValueEncoded<ManagedAddress>);
