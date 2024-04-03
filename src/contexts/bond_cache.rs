@@ -12,7 +12,7 @@ where
     pub nonce: u64,
     pub lock_period: u64,
     pub bond_timestamp: u64,
-    pub unbound_timestamp: u64,
+    pub unbond_timestamp: u64,
     pub bond_amount: BigUint<C::Api>,
     pub remaining_amount: BigUint<C::Api>,
 }
@@ -30,7 +30,7 @@ where
             nonce: sc_ref.bond_nonce(bond_id).get(),
             lock_period: sc_ref.bond_lock_period(bond_id).get(),
             bond_timestamp: sc_ref.bond_timestamp(bond_id).get(),
-            unbound_timestamp: sc_ref.unbound_timestamp(bond_id).get(),
+            unbond_timestamp: sc_ref.unbond_timestamp(bond_id).get(),
             bond_amount: sc_ref.bond_amount(bond_id).get(),
             remaining_amount: sc_ref.remaining_amount(bond_id).get(),
         }
@@ -42,7 +42,7 @@ where
         self.sc_ref.bond_nonce(self.bond_id).clear();
         self.sc_ref.bond_lock_period(self.bond_id).clear();
         self.sc_ref.bond_timestamp(self.bond_id).clear();
-        self.sc_ref.unbound_timestamp(self.bond_id).clear();
+        self.sc_ref.unbond_timestamp(self.bond_id).clear();
         self.sc_ref.bond_amount(self.bond_id).clear();
         self.sc_ref.remaining_amount(self.bond_id).clear();
     }
@@ -60,8 +60,8 @@ where
             .bond_timestamp(self.bond_id)
             .set(self.bond_timestamp);
         self.sc_ref
-            .unbound_timestamp(self.bond_id)
-            .set(self.unbound_timestamp);
+            .unbond_timestamp(self.bond_id)
+            .set(self.unbond_timestamp);
         self.sc_ref.bond_amount(self.bond_id).set(&self.bond_amount);
         self.sc_ref
             .remaining_amount(self.bond_id)

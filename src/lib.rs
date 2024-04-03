@@ -99,7 +99,7 @@ pub trait LifeBondingContract:
         require!(payment.amount == bond_amount, ERR_INVALID_AMOUNT);
 
         let current_timestamp = self.blockchain().get_block_timestamp();
-        let unbound_timestamp = current_timestamp + lock_period_seconds;
+        let unbond_timestamp = current_timestamp + lock_period_seconds;
 
         self.bond_address(bond_id).set(original_caller.clone());
         self.bond_token_identifier(bond_id)
@@ -107,7 +107,7 @@ pub trait LifeBondingContract:
         self.bond_nonce(bond_id).set(nonce);
         self.bond_lock_period(bond_id).set(lock_period_seconds);
         self.bond_timestamp(bond_id).set(current_timestamp);
-        self.unbound_timestamp(bond_id).set(unbound_timestamp);
+        self.unbond_timestamp(bond_id).set(unbond_timestamp);
         self.bond_amount(bond_id).set(payment.amount.clone());
         self.remaining_amount(bond_id).set(payment.amount);
 
@@ -154,13 +154,20 @@ pub trait LifeBondingContract:
         let mut compensation_cache = CompensationCache::new(self, compensation_id);
 
         let mut penalty_amount = BigUint::zero();
-        if bond_cache.unbound_timestamp >= current_timestamp {
+        if bond_cache.unbond_timestamp >= current_timestamp {
             penalty_amount = &bond_cache.bond_amount
                 * &BigUint::from(self.withdraw_penalty().get())
                 / &BigUint::from(10_000u64);
 
-            require!(&bond_cache.remaining_amount > &penalty_amount, ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT);
-            require!(&bond_cache.remaining_amount - &penalty_amount >= compensation_cache.accumulated_amount,ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT);
+            require!(
+                &bond_cache.remaining_amount > &penalty_amount,
+                ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT
+            );
+            require!(
+                &bond_cache.remaining_amount - &penalty_amount
+                    >= compensation_cache.accumulated_amount,
+                ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT
+            );
 
             self.send().direct_esdt(
                 &caller,
@@ -184,7 +191,7 @@ pub trait LifeBondingContract:
         self.withdraw_event(
             &bond_id,
             &caller,
-            &(&bond_cache.bond_amount - &penalty_amount),
+            &(&bond_cache.remaining_amount - &penalty_amount),
             &penalty_amount,
         );
 
@@ -209,10 +216,10 @@ pub trait LifeBondingContract:
 
         let current_timestamp = self.blockchain().get_block_timestamp();
 
-        bond_cache.unbound_timestamp = current_timestamp + bond_cache.lock_period;
+        bond_cache.unbond_timestamp = current_timestamp + bond_cache.lock_period;
         bond_cache.bond_timestamp = current_timestamp;
 
-        self.renew_event(&bond_id, &caller, &bond_cache.unbound_timestamp);
+        self.renew_event(&bond_id, &caller, &bond_cache.unbond_timestamp);
     }
 
     #[payable("*")]

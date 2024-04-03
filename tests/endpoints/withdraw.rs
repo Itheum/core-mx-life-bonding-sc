@@ -215,7 +215,7 @@ fn withdraw_after_penalty_was_enforced_test() {
             CheckAccount::new().esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "105"),
         ));
 
-    // after unbound period
+    // after unbond period
     state.withdraw(FIRST_USER_ADDRESS_EXPR, DATA_NFT_IDENTIFIER, 1u64, None);
 
     state

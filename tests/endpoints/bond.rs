@@ -207,7 +207,7 @@ fn bond() {
                 lock_period: 10u64,
                 bond_timestamp: 0u64,
                 bond_amount: BigUint::from(100u64),
-                unbound_timestamp: 10u64,
+                unbond_timestamp: 10u64,
                 remaining_amount: BigUint::from(100u64),
             }),
     );

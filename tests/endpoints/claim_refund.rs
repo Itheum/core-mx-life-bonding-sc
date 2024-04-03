@@ -171,6 +171,19 @@ fn claim_refund_without_blacklist_test() {
         ),
     );
 
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_compensation(1u64))
+            .expect_value(Compensation {
+                compensation_id: 1u64,
+                token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
+                nonce: 1u64,
+                accumulated_amount: 0u64.into(),
+                proof_amount: 0u64.into(),
+                end_date: 12u64,
+            }),
+    );
+
     state.world.check_state_step(
         CheckStateStep::new().put_account(
             SECOND_USER_ADDRESS_EXPR,

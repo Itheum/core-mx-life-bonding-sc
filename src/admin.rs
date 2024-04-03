@@ -178,9 +178,9 @@ pub trait AdminModule:
         let mut bond_cache = BondCache::new(self, bond_id);
 
         let current_timestamp = self.blockchain().get_block_timestamp();
-        bond_cache.unbound_timestamp = current_timestamp;
+        bond_cache.unbond_timestamp = current_timestamp;
 
-        self.modify_bond_event(&bond_id, &bond_cache.unbound_timestamp);
+        self.modify_bond_event(&bond_id, &bond_cache.unbond_timestamp);
     }
 
     #[endpoint(setContractStateActive)]
