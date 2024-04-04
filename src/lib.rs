@@ -164,8 +164,7 @@ pub trait LifeBondingContract:
                 ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT
             );
             require!(
-                &bond_cache.remaining_amount - &penalty_amount
-                    >= compensation_cache.accumulated_amount,
+                &bond_cache.bond_amount - &penalty_amount >= compensation_cache.accumulated_amount,
                 ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT
             );
 
