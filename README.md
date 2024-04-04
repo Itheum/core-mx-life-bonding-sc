@@ -24,7 +24,7 @@ See `devnet.snippets.sh` for list of available endpoints for user testing.
 
 ### Setting up dev environment (project development bootstrap) + how to build (and upgrade)
 
-- Uses `multiversx-sc-* 0.47.5` (In v1.0.0, we used 0.47.5) SDK libs (see Cargo.toml)
+- Uses `multiversx-sc-* 0.47.8` (In v1.0.0, we used 0.47.8) SDK libs (see Cargo.toml)
 - Building requires minimum **mxpy 9.5.1** (In v1.0.0, we used mxpy 9.5.1). Check version using `mxpy --version`
 - To build the project, requires minimum Rust version `1.78.0-nightly` (In v1.0.0, we used 1.78.0-nightly). Check your Rust version by running `rustc --version`. To update your Rust, run `rustup update`. To set to nightly run `rustup default nightly`. Note that `mxpy deps install rust --overwrite` also brings in it's own compatible rust version so running `rustup default nightly` might have a higher rust version than what is used via `mxpy deps install rust --overwrite`.
 - After you make sure you have the minimum Rust version you can then begin development. After you clone repo and before you run build, deploy or run the tests - follow these steps (most likely only needed the 1st time)
