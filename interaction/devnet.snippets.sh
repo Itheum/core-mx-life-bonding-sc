@@ -60,7 +60,7 @@ restoreDeployData() {
 
   # after we upgraded to mxpy 8.1.2, mxpy data parse seems to load the ADDRESS correctly but it breaks when used below with a weird "Bad address" error
   # so, we just hardcode the ADDRESS here. Just make sure you use the "data['contractAddress'] from the latest deploy-devnet.interaction.json file
-  ADDRESS="erd1qqqqqqqqqqqqqpgq4xqxlq8p8zenrq4f0htgcwjzdlwmrhwdfsxsmavcuq"
+  ADDRESS="erd1qqqqqqqqqqqqqpgqhlyaj872kyh620zsfew64l2k4djerw2tfsxsmrxlan"
 }
 
 setAdministrator(){
