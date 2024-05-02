@@ -76,28 +76,37 @@ pub trait ViewsModule:
         address: ManagedAddress,
         token_identifier: TokenIdentifier,
         nonce: u64,
-    ) -> Option<(Compensation<Self::Api>, Option<Refund<Self::Api>>)> {
+    ) -> Option<Refund<Self::Api>> {
         let compensation_id = self.compensations_ids().get_id((token_identifier, nonce));
         if compensation_id == 0 {
             None
         } else {
-            let compensation = Compensation {
-                compensation_id,
-                token_identifier: self.compensation_token_identifer(compensation_id).get(),
-                nonce: self.compensation_nonce(compensation_id).get(),
-                accumulated_amount: self.compensation_accumulated_amount(compensation_id).get(),
-                proof_amount: self.compensation_proof_amount(compensation_id).get(),
-                end_date: self.compensation_end_date(compensation_id).get(),
-            };
-
-            let refund = self.address_refund(&address, compensation_id).get();
-
             if self.address_refund(&address, compensation_id).is_empty() {
-                Some((compensation, None))
+                None
             } else {
-                Some((compensation, Some(refund)))
+                self.address_refund(&address, compensation_id).get();
+                let refund = self.address_refund(&address, compensation_id).get();
+                Some(refund)
             }
         }
+    }
+
+    #[view(getAddressRefundForCompensations)]
+    fn get_address_refund_for_compensations(
+        &self,
+        address: ManagedAddress,
+        compensation_ids: MultiValueEncoded<u64>,
+    ) -> ManagedVec<Refund<Self::Api>> {
+        compensation_ids
+            .into_iter()
+            .filter_map(|compensation_id| {
+                if self.address_refund(&address, compensation_id).is_empty() {
+                    None
+                } else {
+                    Some(self.address_refund(&address, compensation_id).get())
+                }
+            })
+            .collect::<ManagedVec<Refund<Self::Api>>>()
     }
 
     #[view(getBondsByTokenIdentifierNonce)]

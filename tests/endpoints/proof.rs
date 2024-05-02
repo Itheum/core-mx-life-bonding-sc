@@ -1,5 +1,5 @@
 use core_mx_life_bonding_sc::{
-    storage::{Compensation, PenaltyType, Refund},
+    storage::{PenaltyType, Refund},
     views::ProxyTrait,
 };
 use multiversx_sc::{codec::multi_types::OptionalValue, types::EsdtTokenPayment};
@@ -118,6 +118,16 @@ fn proof_test() {
         .world
         .set_state_step(SetStateStep::new().block_timestamp(12u64));
 
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_address_refund_for_compensation(
+                managed_address!(&first_user_address),
+                managed_token_id!(DATA_NFT_IDENTIFIER),
+                1u64,
+            ))
+            .expect_value(None),
+    );
+
     state.proof(
         FIRST_USER_ADDRESS_EXPR,
         DATA_NFT_IDENTIFIER,
@@ -138,15 +148,6 @@ fn proof_test() {
             ),
         ));
 
-    let compensation = Compensation {
-        compensation_id: 1u64,
-        token_identifier: managed_token_id!(DATA_NFT_IDENTIFIER),
-        nonce: 1u64,
-        accumulated_amount: 100u64.into(),
-        proof_amount: 2u64.into(),
-        end_date: 12u64,
-    };
-
     let refund = Refund {
         address: managed_address!(&first_user_address),
         proof_of_refund: EsdtTokenPayment {
@@ -164,6 +165,6 @@ fn proof_test() {
                 managed_token_id!(DATA_NFT_IDENTIFIER),
                 1u64,
             ))
-            .expect_value(Some((compensation, Some(refund)))),
+            .expect_value(Some(refund)),
     );
 }
