@@ -1,38 +1,36 @@
-PROXY=https://devnet-gateway.multiversx.com
-CHAIN_ID="D"
+PROXY=https://gateway.multiversx.com
+CHAIN_ID="1"
 
-WALLET="./wallet.pem"
-USER="./wallet2.pem"
+ADDRESS=$(mxpy data load --key=address-mainnet)
+DEPLOY_TRANSACTION=$(mxpy data load --key=deployTransaction-mainnet)
 
-ADDRESS=$(mxpy data load --key=address-devnet)
-DEPLOY_TRANSACTION=$(mxpy data load --key=deployTransaction-devnet)
-
-TOKEN="ITHEUM-fce905"
+TOKEN="ITHEUM-df6f26"
 TOKEN_HEX="0x$(echo -n ${TOKEN} | xxd -p -u | tr -d '\n')"
 
 # to deploy from last reprodubible build, we need to change or vice versa
 # --bytecode output/core-mx-life-bonding-sc.wasm \
 # to 
 # --bytecode output-docker/core-mx-life-bonding-sc/core-mx-life-bonding-sc.wasm \
-deploy(){
+deployLedgerMainnet(){
     mxpy --verbose contract deploy \
     --bytecode output-docker/core-mx-life-bonding-sc/core-mx-life-bonding-sc.wasm \
     --outfile deployOutput \
     --metadata-not-readable \
     --metadata-payable-by-sc \
-    --pem ${WALLET} \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --gas-limit 150000000 \
     --send \
     --recall-nonce \
-    --outfile="./interaction/deploy-devnet.interaction.json" || return
+    --ledger \
+    --ledger-address-index 0 \
+    --outfile="./interaction/deploy-mainnet.interaction.json" || return
 
-    TRANSACTION=$(mxpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['emittedTransactionHash']")
-    ADDRESS=$(mxpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['contractAddress']")
+    TRANSACTION=$(mxpy data parse --file="./interaction/deploy-mainnet.interaction.json" --expression="data['emittedTransactionHash']")
+    ADDRESS=$(mxpy data parse --file="./interaction/deploy-mainnet.interaction.json" --expression="data['contractAddress']")
 
-    mxpy data store --key=address-devnet --value=${ADDRESS}
-    mxpy data store --key=deployTransaction-devnet --value=${TRANSACTION}
+    mxpy data store --key=address-mainnet --value=${ADDRESS}
+    mxpy data store --key=deployTransaction-mainnet --value=${TRANSACTION}
 }
 
 # any change to code or property requires a full upgrade 
@@ -43,150 +41,160 @@ deploy(){
 upgrade(){
     mxpy --verbose contract upgrade ${ADDRESS} \
     --bytecode output-docker/core-mx-life-bonding-sc/core-mx-life-bonding-sc.wasm \
-    --metadata-not-readable \
     --metadata-payable-by-sc \
-    --pem ${WALLET} \
+    --metadata-payable \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --gas-limit 150000000 \
     --recall-nonce \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
 # if you interact without calling deploy(), then you need to 1st run this to restore the vars from data
-restoreDeployData() {
-  TRANSACTION=$(mxpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['emittedTransactionHash']")
-  ADDRESS=$(mxpy data parse --file="./interaction/deploy-devnet.interaction.json" --expression="data['contractAddress']")
+restoreDeployDataLedgerMainnet(){
+  TRANSACTION=$(mxpy data parse --file="./interaction/deploy-mainnet.interaction.json" --expression="data['emittedTransactionHash']")
+  ADDRESS=$(mxpy data parse --file="./interaction/deploy-mainnet.interaction.json" --expression="data['contractAddress']")
 
   # after we upgraded to mxpy 8.1.2, mxpy data parse seems to load the ADDRESS correctly but it breaks when used below with a weird "Bad address" error
   # so, we just hardcode the ADDRESS here. Just make sure you use the "data['contractAddress'] from the latest deploy-devnet.interaction.json file
-  ADDRESS="erd1qqqqqqqqqqqqqpgqhlyaj872kyh620zsfew64l2k4djerw2tfsxsmrxlan"
+  ADDRESS="erd1qqqqqqqqqqqqqpgq9yfa4vcmtmn55z0e5n84zphf2uuuxxw9c77qgqqwkn"
 }
 
-setAdministrator(){
+setAdministratorMainnet(){
     # $1 = address
 
     address="0x$(mxpy wallet bech32 --decode ${1})"
 
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${WALLET} \
     --gas-limit=6000000 \
     --function "setAdministrator" \
     --arguments $address \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-setContractStateActive(){
+setContractStateActiveMainnet(){
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${WALLET} \
     --gas-limit=6000000 \
     --function "setContractStateActive" \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-setContractStateInactive(){
+setContractStateInactiveMainnet(){
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${WALLET} \
     --gas-limit=6000000 \
     --function "setContractStateInactive" \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-setAcceptedCallers(){
+setAcceptedCallersMainnet(){
     # $1 = address
 
     address="0x$(mxpy wallet bech32 --decode ${1})"
 
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${WALLET} \
     --gas-limit=6000000 \
     --function "setAcceptedCallers" \
     --arguments $address \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-setBondToken(){
+setBondTokenMainnet(){
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${WALLET} \
     --gas-limit=6000000 \
     --function "setBondToken" \
     --arguments $TOKEN_HEX \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-setPeriodsBonds(){    
+setPeriodsBondsMainnet(){    
     # $1 = lockPeriod
     # $2 = bond
 
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${WALLET} \
     --gas-limit=6000000 \
     --function "setPeriodsBonds" \
     --arguments $1 $2 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-setMinimumPenalty(){
+setMinimumPenaltyMainnet(){
     # $1 = minimumPenalty
 
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${WALLET} \
     --gas-limit=6000000 \
     --function "setMinimumPenalty" \
     --arguments $1 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-setMaximumPenalty(){ 
+setMaximumPenaltyMainnet(){ 
     # $1 = maximumPenalty
 
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${WALLET} \
     --gas-limit=6000000 \
     --function "setMaximumPenalty" \
     --arguments $1 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-setWithdrawPenalty(){
+setWithdrawPenaltyMainnet(){
     # $1 = withdrawPenalty
 
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${WALLET} \
     --gas-limit=6000000 \
     --function "setWithdrawPenalty" \
     --arguments $1 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-sanction(){
+sanctionMainnet(){
     # $1 = token identifier
     # $2 = nonce
     # $3 = penalty (0=minimum, 1=custom, 2=maximum)
@@ -198,16 +206,17 @@ sanction(){
     
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${WALLET} \
     --gas-limit=6000000 \
     --function "sanction" \
     --arguments $token_identifier $2 $penalty $custom_penalty \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-modifyBond(){
+modifyBondMainnet(){
     # $1 = token identifier
     # $2 = nonce
 
@@ -215,16 +224,17 @@ modifyBond(){
 
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${WALLET} \
     --gas-limit=6000000 \
     --function "modifyBond" \
     --arguments $token_identifier $2 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-withdraw(){
+withdrawMainnet(){
     # $1 = token identifier
     # $2 = nonce 
 
@@ -232,16 +242,17 @@ withdraw(){
 
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${USER} \
     --gas-limit=20000000 \
     --function "withdraw" \
     --arguments $token_identifier $2 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-renew(){    
+renewMainnet(){    
     # $1 = token identifier
     # $2 = nonce 
 
@@ -249,16 +260,17 @@ renew(){
 
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${USER} \
     --gas-limit=6000000 \
     --function "renew" \
     --arguments $token_identifier $2 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-renewWithNewLockPeriod(){     
+renewWithNewLockPeriodMainnet(){     
     # $1 = token identifier
     # $2 = nonce 
     # $3 = lockPeriod
@@ -267,16 +279,17 @@ renewWithNewLockPeriod(){
 
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${USER} \
     --gas-limit=6000000 \
     --function "renew" \
     --arguments $token_identifier $2 $3 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
 
-initiateBond() {
+initiateBondMainnet() {
     # $1 = the address for who the bond is initiated
     # $2 = token identifier
     # $3 = nonce
@@ -286,11 +299,12 @@ initiateBond() {
 
     mxpy --verbose contract call ${ADDRESS} \
     --recall-nonce \
-    --pem=${WALLET} \
     --gas-limit=20000000 \
     --function "initiateBond" \
     --arguments $address $token_identifier $3 \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
+    --ledger \
+    --ledger-address-index 0 \
     --send || return
 }
