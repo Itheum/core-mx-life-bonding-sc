@@ -2,7 +2,10 @@ use core_mx_life_bonding_sc::{
     storage::{PenaltyType, Refund},
     views::ProxyTrait,
 };
-use multiversx_sc::{codec::multi_types::OptionalValue, types::EsdtTokenPayment};
+use multiversx_sc::{
+    codec::multi_types::OptionalValue,
+    types::{EsdtTokenPayment, ManagedVec, MultiValueEncoded},
+};
 use multiversx_sc_scenario::{
     managed_address, managed_token_id,
     scenario_model::{
@@ -118,6 +121,19 @@ fn proof_test() {
         .world
         .set_state_step(SetStateStep::new().block_timestamp(12u64));
 
+    let mut multiValue = MultiValueEncoded::new();
+
+    multiValue.push(1u64);
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_address_refund_for_compensations(
+                managed_address!(&first_user_address),
+                multiValue.clone(),
+            ))
+            .expect_value(ManagedVec::new()),
+    );
+
     state.world.sc_query(
         ScQueryStep::new()
             .call(state.contract.get_address_refund_for_compensation(
@@ -165,6 +181,19 @@ fn proof_test() {
                 managed_token_id!(DATA_NFT_IDENTIFIER),
                 1u64,
             ))
-            .expect_value(Some(refund)),
+            .expect_value(Some(refund.clone())),
+    );
+
+    let mut managedVec = ManagedVec::new();
+
+    managedVec.push(refund.clone());
+
+    state.world.sc_query(
+        ScQueryStep::new()
+            .call(state.contract.get_address_refund_for_compensations(
+                managed_address!(&first_user_address),
+                multiValue,
+            ))
+            .expect_value(managedVec),
     );
 }
