@@ -21,7 +21,7 @@ pub enum State {
     Active,
 }
 
-pub const COMPENSATION_SAFE_PERIOD: u64 = 300;
+pub const COMPENSATION_SAFE_PERIOD: u64 = 86_400;
 
 #[multiversx_sc::module]
 pub trait ConfigModule: storage::StorageModule + events::EventsModule {
