@@ -116,7 +116,7 @@ pub trait LifeBondingContract:
 
         let compensation_id = self
             .compensations_ids()
-            .insert_new((token_identifier.clone(), nonce));
+            .get_id_or_insert((token_identifier.clone(), nonce));
 
         self.compensations().insert(compensation_id);
 

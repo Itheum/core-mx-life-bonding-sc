@@ -81,7 +81,16 @@ pub struct Compensation<M: ManagedTypeApi> {
 }
 
 #[derive(
-    TopEncode, TopDecode, NestedEncode, NestedDecode, TypeAbi, Clone, PartialEq, Eq, Debug,
+    TopEncode,
+    TopDecode,
+    NestedEncode,
+    NestedDecode,
+    TypeAbi,
+    Clone,
+    PartialEq,
+    Eq,
+    Debug,
+    ManagedVecItem,
 )]
 pub struct Refund<M: ManagedTypeApi> {
     pub address: ManagedAddress<M>,

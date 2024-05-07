@@ -319,7 +319,7 @@ checksum = "06ea2b9bc92be3c2baa9334a323ebca2d6f074ff852cd1d7b11064035cd3868f"
 
 [[package]]
 name = "core-mx-life-bonding-sc"
-version = "1.0.0"
+version = "2.0.0"
 dependencies = [
  "multiversx-sc",
  "multiversx-sc-scenario",
@@ -327,7 +327,7 @@ dependencies = [
 
 [[package]]
 name = "core-mx-life-bonding-sc-meta"
-version = "1.0.0"
+version = "2.0.0"
 dependencies = [
  "core-mx-life-bonding-sc",
  "multiversx-sc-meta",

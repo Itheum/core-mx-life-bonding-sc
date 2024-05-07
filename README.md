@@ -12,9 +12,9 @@ Understanding this document is also easier if one knows how [ESDT token transact
 
 ## Itheum deployed contract addresses
 
-| Devnet                                                         | Mainnet |
-| -------------------------------------------------------------- | ------- |
-| erd1qqqqqqqqqqqqqpgq4xqxlq8p8zenrq4f0htgcwjzdlwmrhwdfsxsmavcuq |         |
+| Devnet                                                         | Mainnet                                                        |
+| -------------------------------------------------------------- | -------------------------------------------------------------- |
+| erd1qqqqqqqqqqqqqpgqhlyaj872kyh620zsfew64l2k4djerw2tfsxsmrxlan | erd1qqqqqqqqqqqqqpgq9yfa4vcmtmn55z0e5n84zphf2uuuxxw9c77qgqqwkn |
 
 ## Endpoints
 
@@ -24,9 +24,15 @@ See `devnet.snippets.sh` for list of available endpoints for user testing.
 
 ### Setting up dev environment (project development bootstrap) + how to build (and upgrade)
 
+<<<<<<< HEAD
+- Uses `multiversx-sc-* 0.47.5` (In v2.0.0, we used 0.47.8) SDK libs (see Cargo.toml)
+- Building requires minimum **mxpy 9.5.1** (In v2.0.0, we used mxpy 9.5.1). Check version using `mxpy --version`
+- To build the project, requires minimum Rust version `1.78.0-nightly` (In v2.0.0, we used 1.78.0-nightly). Check your Rust version by running `rustc --version`. To update your Rust, run `rustup update`. To set to nightly run `rustup default nightly`. Note that `mxpy deps install rust --overwrite` also brings in it's own compatible rust version so running `rustup default nightly` might have a higher rust version than what is used via `mxpy deps install rust --overwrite`.
+=======
 - Uses `multiversx-sc-* 0.47.8` (In v1.0.0, we used 0.47.8) SDK libs (see Cargo.toml)
 - Building requires minimum **mxpy 9.5.1** (In v1.0.0, we used mxpy 9.5.1). Check version using `mxpy --version`
 - To build the project, requires minimum Rust version `1.78.0-nightly` (In v1.0.0, we used 1.78.0-nightly). Check your Rust version by running `rustc --version`. To update your Rust, run `rustup update`. To set to nightly run `rustup default nightly`. Note that `mxpy deps install rust --overwrite` also brings in it's own compatible rust version so running `rustup default nightly` might have a higher rust version than what is used via `mxpy deps install rust --overwrite`.
+>>>>>>> main
 - After you make sure you have the minimum Rust version you can then begin development. After you clone repo and before you run build, deploy or run the tests - follow these steps (most likely only needed the 1st time)
 - [Upgrades] Note that when we upgrade smart contract, we should again follow the steps below too as lib version may have changed (but for upgrade I skipped the rustup default nightly cmd and did the others)
 

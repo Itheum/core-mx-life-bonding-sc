@@ -1,6 +1,6 @@
 [package]
 name = "core-mx-life-bonding-sc"
-version = "1.0.0"
+version = "2.0.0"
 authors = ["Bucur David - Itheum"]
 edition = "2021"
 publish = false
