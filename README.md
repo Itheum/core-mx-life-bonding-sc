@@ -12,9 +12,9 @@ Understanding this document is also easier if one knows how [ESDT token transact
 
 ## Itheum deployed contract addresses
 
-| Devnet                                                         | Mainnet |
-| -------------------------------------------------------------- | ------- |
-| erd1qqqqqqqqqqqqqpgq4xqxlq8p8zenrq4f0htgcwjzdlwmrhwdfsxsmavcuq |         |
+| Devnet                                                         | Mainnet                                                        |
+| -------------------------------------------------------------- | -------------------------------------------------------------- |
+| erd1qqqqqqqqqqqqqpgqhlyaj872kyh620zsfew64l2k4djerw2tfsxsmrxlan | erd1qqqqqqqqqqqqqpgq9yfa4vcmtmn55z0e5n84zphf2uuuxxw9c77qgqqwkn |
 
 ## Endpoints
 
