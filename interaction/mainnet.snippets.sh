@@ -41,8 +41,8 @@ deployLedgerMainnet(){
 upgrade(){
     mxpy --verbose contract upgrade ${ADDRESS} \
     --bytecode output-docker/core-mx-life-bonding-sc/core-mx-life-bonding-sc.wasm \
+    --metadata-not-readable \
     --metadata-payable-by-sc \
-    --metadata-payable \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --gas-limit 150000000 \
