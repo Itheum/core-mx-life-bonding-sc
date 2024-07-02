@@ -1,0 +1,4 @@
+[settings]
+
+[[proxy]]
+path = "proxy/src/lib.rs"

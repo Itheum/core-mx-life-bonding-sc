@@ -1,3 +1,5 @@
+use std::cell::Ref;
+
 use core_mx_life_bonding_sc::{
     storage::{PenaltyType, Refund},
     views::ProxyTrait,
@@ -7,7 +9,9 @@ use multiversx_sc::{
     types::{EsdtTokenPayment, ManagedVec, MultiValueEncoded},
 };
 use multiversx_sc_scenario::{
+    api::StaticApi,
     managed_address, managed_token_id,
+    multiversx_chain_vm::vm_hooks::StaticApiVMHooksHandler,
     scenario_model::{
         AddressValue, CheckAccount, CheckStateStep, ScQueryStep, SetStateStep, TransferStep,
         TxExpect,
@@ -131,7 +135,7 @@ fn proof_test() {
                 managed_address!(&first_user_address),
                 multiValue.clone(),
             ))
-            .expect_value(ManagedVec::new()),
+            .expect_value(ManagedVec::<StaticApi, Refund<StaticApi>>::new()),
     );
 
     state.world.sc_query(
@@ -141,7 +145,7 @@ fn proof_test() {
                 managed_token_id!(DATA_NFT_IDENTIFIER),
                 1u64,
             ))
-            .expect_value(None),
+            .expect_value(Option::<Refund<StaticApi>>::None),
     );
 
     state.proof(

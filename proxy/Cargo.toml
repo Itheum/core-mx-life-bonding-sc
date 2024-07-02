@@ -1,0 +1,10 @@
+[package]
+name = "life-bonding-sc-proxy"
+version = "2.0.0"
+authors = ["Bucur David - Itheum"]
+edition = "2021"
+publish = false
+
+
+[lib]
+path = "src/lib.rs"
