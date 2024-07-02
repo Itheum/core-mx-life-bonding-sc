@@ -1,0 +1,4 @@
+[settings]
+
+[[proxy]]
+path = "src/life-bonding-sc-proxy.rs"
