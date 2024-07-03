@@ -144,6 +144,17 @@ pub trait ViewsModule:
             .collect::<ManagedVec<Bond<Self::Api>>>()
     }
 
+    #[view(getAddressBondsTotalValue)]
+    fn get_address_bonds_total_value(&self, address: ManagedAddress<Self::Api>) -> BigUint {
+        let total_value = self
+            .address_bonds(&address)
+            .into_iter()
+            .fold(BigUint::zero(), |acc, bond_id| {
+                acc + self.remaining_amount(bond_id).get()
+            });
+        total_value
+    }
+
     #[view(getAllBonds)]
     fn get_all_bonds(&self) -> ManagedVec<Bond<Self::Api>> {
         self.bonds()

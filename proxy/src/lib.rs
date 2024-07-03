@@ -171,6 +171,15 @@ where
             .original_result()
     }
 
+    pub fn total_bond_amount(
+        self,
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, BigUint<Env::Api>> {
+        self.wrapped_tx
+            .payment(NotPayable)
+            .raw_call("getTotalBondAmount")
+            .original_result()
+    }
+
     pub fn get_bond<
         Arg0: ProxyArg<u64>,
     >(
@@ -296,6 +305,19 @@ where
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getAddressBonds")
+            .argument(&address)
+            .original_result()
+    }
+
+    pub fn get_address_bonds_total_value<
+        Arg0: ProxyArg<ManagedAddress<Env::Api>>,
+    >(
+        self,
+        address: Arg0,
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, BigUint<Env::Api>> {
+        self.wrapped_tx
+            .payment(NotPayable)
+            .raw_call("getAddressBondsTotalValue")
             .argument(&address)
             .original_result()
     }

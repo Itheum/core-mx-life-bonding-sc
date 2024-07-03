@@ -156,6 +156,9 @@ pub trait AdminModule:
             ERR_INVALID_PENALTY_VALUE
         );
 
+        self.total_bond_amount()
+            .update(|value| *value -= &penalty_amount);
+
         self.sanction_event(
             &bond_id,
             &compensation_id,

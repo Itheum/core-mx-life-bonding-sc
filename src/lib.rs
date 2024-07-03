@@ -101,6 +101,9 @@ pub trait LifeBondingContract:
         let current_timestamp = self.blockchain().get_block_timestamp();
         let unbond_timestamp = current_timestamp + lock_period_seconds;
 
+        self.total_bond_amount()
+            .update(|value| *value += bond_amount);
+
         self.bond_address(bond_id).set(original_caller.clone());
         self.bond_token_identifier(bond_id)
             .set(token_identifier.clone());

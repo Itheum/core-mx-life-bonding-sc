@@ -169,4 +169,8 @@ pub trait StorageModule {
         address: &ManagedAddress,
         compensation_id: u64,
     ) -> SingleValueMapper<Refund<Self::Api>>;
+
+    #[view(getTotalBondAmount)]
+    #[storage_mapper("total_bond_amount")]
+    fn total_bond_amount(&self) -> SingleValueMapper<BigUint>;
 }
