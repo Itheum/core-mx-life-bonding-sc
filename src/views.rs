@@ -144,6 +144,35 @@ pub trait ViewsModule:
             .collect::<ManagedVec<Bond<Self::Api>>>()
     }
 
+    #[view(getAddressBondsAvgScore)]
+    fn get_address_bonds_avg_score(
+        &self,
+        address: ManagedAddress,
+        optional_timestamp: Option<u64>,
+    ) -> BigUint<Self::Api> {
+        let timestamp = optional_timestamp.unwrap_or(self.blockchain().get_block_timestamp());
+        let bonds = self.address_bonds(&address);
+
+        // Return zero if there are no bonds
+        if bonds.is_empty() {
+            return BigUint::zero();
+        }
+
+        // Calculate the total bond score
+        let total_score: BigUint = bonds.iter().fold(BigUint::zero(), |acc, bond_id| {
+            let bond = self.get_bond(bond_id);
+            let bond_score = BigUint::from(timestamp) * BigUint::from(10_000u64)
+                / BigUint::from(bond.unbond_timestamp);
+            acc + bond_score
+        });
+
+        // Calculate the average bond score
+        let bond_count = BigUint::from(bonds.len() as u64);
+        let average_score = total_score / bond_count;
+
+        average_score
+    }
+
     #[view(getAddressBondsTotalValue)]
     fn get_address_bonds_total_value(&self, address: ManagedAddress<Self::Api>) -> BigUint {
         let total_value = self
