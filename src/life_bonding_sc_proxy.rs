@@ -713,7 +713,7 @@ where
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode)]
+#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode, ManagedVecItem)]
 pub struct Bond<Api>
 where
     Api: ManagedTypeApi,
@@ -730,7 +730,7 @@ where
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode)]
+#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode, ManagedVecItem)]
 pub struct Compensation<Api>
 where
     Api: ManagedTypeApi,
@@ -744,7 +744,7 @@ where
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode)]
+#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode, ManagedVecItem)]
 pub struct Refund<Api>
 where
     Api: ManagedTypeApi,
@@ -771,7 +771,7 @@ where
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode)]
+#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode)]
 pub enum State {
     Inactive,
     Active,

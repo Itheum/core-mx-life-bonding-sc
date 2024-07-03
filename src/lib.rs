@@ -22,6 +22,7 @@ pub mod config;
 pub mod contexts;
 pub mod errors;
 pub mod events;
+pub mod life_bonding_sc_proxy;
 pub mod storage;
 pub mod views;
 #[multiversx_sc::contract]
