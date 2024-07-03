@@ -1,4 +1,4 @@
 [settings]
 
 [[proxy]]
-path = "proxy/src/lib.rs"
+path = "/src/life_bonding_sc_proxy.rs"
