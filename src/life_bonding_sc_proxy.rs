@@ -311,17 +311,14 @@ where
 
     pub fn get_address_bonds_avg_score<
         Arg0: ProxyArg<ManagedAddress<Env::Api>>,
-        Arg1: ProxyArg<Option<u64>>,
     >(
         self,
         address: Arg0,
-        optional_timestamp: Arg1,
     ) -> TxTypedCall<Env, From, To, NotPayable, Gas, BigUint<Env::Api>> {
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getAddressBondsAvgScore")
             .argument(&address)
-            .argument(&optional_timestamp)
             .original_result()
     }
 
@@ -787,7 +784,7 @@ where
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode)]
+#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode, ManagedVecItem)]
 pub enum State {
     Inactive,
     Active,

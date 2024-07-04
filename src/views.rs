@@ -145,12 +145,8 @@ pub trait ViewsModule:
     }
 
     #[view(getAddressBondsAvgScore)]
-    fn get_address_bonds_avg_score(
-        &self,
-        address: ManagedAddress,
-        optional_timestamp: Option<u64>,
-    ) -> BigUint<Self::Api> {
-        let timestamp = optional_timestamp.unwrap_or(self.blockchain().get_block_timestamp());
+    fn get_address_bonds_avg_score(&self, address: ManagedAddress) -> BigUint<Self::Api> {
+        let timestamp = self.blockchain().get_block_timestamp();
         let bonds = self.address_bonds(&address);
 
         // Return zero if there are no bonds
