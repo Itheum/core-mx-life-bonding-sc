@@ -149,18 +149,26 @@ pub trait ViewsModule:
         let timestamp = self.blockchain().get_block_timestamp();
         let bonds = self.address_bonds(&address);
 
-        // Return zero if there are no bonds
         if bonds.is_empty() {
             return BigUint::zero();
         }
 
-        // Calculate the total bond score
-        let total_score: BigUint = bonds.iter().fold(BigUint::zero(), |acc, bond_id| {
-            let bond = self.get_bond(bond_id);
-            let bond_score = BigUint::from(timestamp) * BigUint::from(10_000u64)
-                / BigUint::from(bond.bond_timestamp);
-            acc + bond_score
-        });
+        let mut total_score = BigUint::zero();
+
+        for bond_id in bonds.iter() {
+            let bond: Bond<<Self as ContractBase>::Api> = self.get_bond(bond_id);
+            let difference = bond.unbond_timestamp - timestamp;
+
+            if timestamp >= bond.unbond_timestamp {
+                continue;
+            }
+
+            let bond_score = ((BigUint::from(10_000_000_000_000u64) / bond.lock_period)
+                * difference)
+                / BigUint::from(1_000_000_000u64);
+
+            total_score += bond_score;
+        }
 
         // Calculate the average bond score
         let bond_count = BigUint::from(bonds.len() as u64);
