@@ -158,7 +158,7 @@ pub trait ViewsModule:
         let total_score: BigUint = bonds.iter().fold(BigUint::zero(), |acc, bond_id| {
             let bond = self.get_bond(bond_id);
             let bond_score = BigUint::from(timestamp) * BigUint::from(10_000u64)
-                / BigUint::from(bond.unbond_timestamp);
+                / BigUint::from(bond.bond_timestamp);
             acc + bond_score
         });
 
