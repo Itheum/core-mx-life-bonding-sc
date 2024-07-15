@@ -51,6 +51,15 @@ pub trait LifeBondingContract:
     fn upgrade(&self) {
         self.contract_state().set(State::Inactive);
         self.contract_state_event(State::Inactive);
+
+        // NEEDS TO BE USED AS STORAGE WAS NOT IMPLEMENTED
+        // DEVNET
+        self.total_bond_amount()
+            .set(BigUint::from(1313800000000000000000u128));
+
+        // MAINNET
+        // self.total_bond_amount()
+        //     .set(BigUint::from(10494000000000000000000u128));
     }
 
     #[payable("*")]
