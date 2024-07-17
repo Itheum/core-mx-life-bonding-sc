@@ -602,4 +602,44 @@ impl ContractState {
         );
         self
     }
+
+    pub fn set_vault_nonce(
+        &mut self,
+        caller: &str,
+        token_identifier: &[u8],
+        nonce: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        self.world.sc_call(
+            ScCallStep::new()
+                .from(caller)
+                .call(
+                    self.contract
+                        .set_vault_nonce(managed_token_id!(token_identifier), nonce),
+                )
+                .expect(expect.unwrap_or(TxExpect::ok())),
+        );
+        self
+    }
+
+    pub fn top_up_vault(
+        &mut self,
+        caller: &str,
+        payment: (&str, u64, u64),
+        token_identifier: &[u8],
+        nonce: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        self.world.sc_call(
+            ScCallStep::new()
+                .from(caller)
+                .esdt_transfer(payment.0, payment.1, payment.2)
+                .call(
+                    self.contract
+                        .top_up_vault(managed_token_id!(token_identifier), nonce),
+                )
+                .expect(expect.unwrap_or(TxExpect::ok())),
+        );
+        self
+    }
 }

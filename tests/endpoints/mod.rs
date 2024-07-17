@@ -4,5 +4,6 @@ mod claim_refund;
 mod deploy_upgrade;
 mod proof;
 mod renew;
+mod vault;
 mod views;
 mod withdraw;

@@ -9,7 +9,7 @@ use crate::{
         ERR_BOND_NOT_FOUND, ERR_CONTRACT_NOT_READY, ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS,
         ERR_INVALID_AMOUNT, ERR_INVALID_LOCK_PERIOD, ERR_INVALID_TIMELINE_TO_PROOF,
         ERR_INVALID_TIMELINE_TO_REFUND, ERR_INVALID_TOKEN_IDENTIFIER,
-        ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND,
+        ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND, ERR_VAULT_NONCE_NOT_SET,
     },
     storage::Refund,
 };
@@ -361,5 +361,54 @@ pub trait LifeBondingContract:
         {
             self.compensations().swap_remove(&compensation_id);
         }
+    }
+
+    #[endpoint(setVaultNonce)]
+    fn set_vault_nonce(&self, token_identifier: TokenIdentifier, nonce: u64) {
+        let caller = self.blockchain().get_caller();
+
+        let bond_id = self
+            .bonds_ids()
+            .get_id_non_zero((token_identifier.clone(), nonce));
+
+        let bond_cache = BondCache::new(self, bond_id);
+
+        require!(bond_cache.address == caller, ERR_BOND_NOT_FOUND);
+
+        self.address_vault_nonce(&caller, &token_identifier)
+            .set(nonce);
+    }
+
+    #[payable("*")]
+    #[endpoint(topUpVault)]
+    fn top_up_vault(&self, token_identifier: TokenIdentifier, nonce: u64) {
+        let caller = self.blockchain().get_caller();
+
+        require!(
+            self.address_vault_nonce(&caller, &token_identifier).get() == nonce,
+            ERR_VAULT_NONCE_NOT_SET
+        );
+
+        let bond_id = self
+            .bonds_ids()
+            .get_id_non_zero((token_identifier.clone(), nonce));
+
+        let mut bond_cache = BondCache::new(self, bond_id);
+
+        require!(bond_cache.address == caller, ERR_BOND_NOT_FOUND);
+
+        let payment = self.call_value().single_esdt();
+
+        require!(
+            payment.token_identifier == self.bond_payment_token().get(),
+            ERR_INVALID_TOKEN_IDENTIFIER
+        );
+
+        let current_timestamp = self.blockchain().get_block_timestamp();
+
+        bond_cache.unbond_timestamp = current_timestamp + bond_cache.lock_period;
+        bond_cache.bond_timestamp = current_timestamp;
+        bond_cache.bond_amount += &payment.amount;
+        bond_cache.remaining_amount += &payment.amount;
     }
 }
