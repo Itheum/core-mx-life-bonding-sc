@@ -804,7 +804,7 @@ where
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode)]
+#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode, ManagedVecItem)]
 pub struct Refund<Api>
 where
     Api: ManagedTypeApi,
