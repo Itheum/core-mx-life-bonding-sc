@@ -188,6 +188,9 @@ pub trait LifeBondingContract:
                 &(&bond_cache.remaining_amount - &penalty_amount),
             );
 
+            self.total_bond_amount()
+                .update(|value| *value -= &(&bond_cache.remaining_amount + &penalty_amount));
+
             compensation_cache.accumulated_amount += &penalty_amount;
         } else {
             self.send().direct_esdt(
@@ -196,6 +199,9 @@ pub trait LifeBondingContract:
                 0u64,
                 &bond_cache.remaining_amount,
             );
+
+            self.total_bond_amount()
+                .update(|value| *value -= &bond_cache.remaining_amount);
 
             self.compensations().swap_remove(&compensation_id);
         }
@@ -208,6 +214,7 @@ pub trait LifeBondingContract:
         );
 
         self.bonds().swap_remove(&bond_id);
+        self.address_bonds(&caller).swap_remove(&bond_id);
     }
 
     #[endpoint(renew)]
