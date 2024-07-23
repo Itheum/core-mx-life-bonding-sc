@@ -144,6 +144,12 @@ pub trait LifeBondingContract:
 
         self.bond_event(&self.get_bond(bond_id));
         self.compensation_event(&self.get_compensation(compensation_id));
+
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .generate_rewards()
+            .sync_call();
     }
 
     #[endpoint(withdraw)]
@@ -204,6 +210,12 @@ pub trait LifeBondingContract:
                 .update(|value| *value -= &bond_cache.remaining_amount);
 
             self.compensations().swap_remove(&compensation_id);
+
+            self.tx()
+                .to(self.liveliness_stake_address().get())
+                .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+                .generate_rewards()
+                .sync_call();
         }
 
         self.withdraw_event(

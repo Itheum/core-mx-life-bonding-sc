@@ -183,4 +183,8 @@ pub trait StorageModule {
         address: &ManagedAddress,
         token_identifier: &TokenIdentifier,
     ) -> SingleValueMapper<u64>;
+
+    #[view(getLivelinessStakeAddress)]
+    #[storage_mapper("liveliness_stake_address")]
+    fn liveliness_stake_address(&self) -> SingleValueMapper<ManagedAddress>;
 }

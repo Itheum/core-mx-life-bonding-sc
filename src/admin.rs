@@ -170,6 +170,12 @@ pub trait AdminModule:
         bond_cache.remaining_amount -= &penalty_amount;
 
         compensation_cache.accumulated_amount += &penalty_amount;
+
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .generate_rewards()
+            .sync_call();
     }
 
     #[endpoint(modifyBond)]
@@ -295,5 +301,12 @@ pub trait AdminModule:
         require!(penalty <= 10_000 && penalty > 0, ERR_INVALID_PENALTY_VALUE);
         self.withdraw_penalty_event(penalty);
         self.withdraw_penalty().set(penalty);
+    }
+
+    #[endpoint(setLivelinessStakeAddress)]
+    fn set_liveliness_stake_address(&self, address: ManagedAddress) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+        self.set_liveliness_stake_address_event(&address);
+        self.liveliness_stake_address().set(address);
     }
 }
