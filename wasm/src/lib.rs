@@ -6,9 +6,9 @@
 
 // Init:                                 1
 // Upgrade:                              1
-// Endpoints:                           53
+// Endpoints:                           55
 // Async Callback (empty):               1
-// Total number of exported functions:  56
+// Total number of exported functions:  58
 
 #![no_std]
 
@@ -30,6 +30,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getCompensationBlacklist => compensation_blacklist
         getTotalBondAmount => total_bond_amount
         getAddressVaultNone => address_vault_nonce
+        getLivelinessStakeAddress => liveliness_stake_address
         getBond => get_bond
         getCompensation => get_compensation
         getCompensations => get_compensations
@@ -63,6 +64,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         setMinimumPenalty => set_minimum_penalty
         setMaximumPenalty => set_maximum_penalty
         setWithdrawPenalty => set_withdraw_penalty
+        setLivelinessStakeAddress => set_liveliness_stake_address
         setAdministrator => set_administrator
         getContractState => contract_state
         getAdministrator => administrator
