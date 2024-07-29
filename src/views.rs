@@ -152,6 +152,7 @@ pub trait ViewsModule:
         }
 
         let mut total_score = BigUint::zero();
+        let mut bond_count = BigUint::zero();
 
         for bond_id in bonds.iter() {
             let bond: Bond<<Self as ContractBase>::Api> = self.get_bond(bond_id);
@@ -165,21 +166,18 @@ pub trait ViewsModule:
                 * difference)
                 / BigUint::from(1_000_000_000u64);
 
-            total_score += bond_score;
+            total_score += bond_score * &bond.remaining_amount;
+            bond_count += &bond.remaining_amount;
         }
 
-        // Calculate the average bond score
-        let bond_count = BigUint::from(bonds.len() as u64);
-        
+        // Calculate the weighted average bond score
 
         total_score / bond_count
     }
 
     #[view(getAddressBondsTotalValue)]
     fn get_address_bonds_total_value(&self, address: ManagedAddress<Self::Api>) -> BigUint {
-        
-        self
-            .address_bonds(&address)
+        self.address_bonds(&address)
             .into_iter()
             .fold(BigUint::zero(), |acc, bond_id| {
                 acc + self.remaining_amount(bond_id).get()
