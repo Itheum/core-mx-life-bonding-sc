@@ -450,6 +450,7 @@ pub trait LifeBondingContract:
             .update(|value| *value += &payment.amount);
     }
 
+    #[payable("*")]
     #[endpoint(stakeRewards)]
     fn stake_rewards(
         &self,
