@@ -15,17 +15,17 @@ fn bond_contract_ready_test() {
 
     bond_contract.init();
 
-    assert_eq!(false, bond_contract.contract_is_ready());
+    assert!(!bond_contract.contract_is_ready());
 
     bond_contract.administrator().set(managed_address!(
         &AddressValue::from("address:admin").to_address()
     ));
 
-    assert_eq!(false, bond_contract.contract_is_ready());
+    assert!(!bond_contract.contract_is_ready());
 
     bond_contract.contract_state().set(State::Active);
 
-    assert_eq!(false, bond_contract.contract_is_ready());
+    assert!(!bond_contract.contract_is_ready());
 
     bond_contract
         .accepted_callers()
@@ -33,27 +33,27 @@ fn bond_contract_ready_test() {
             &AddressValue::from("address:caller").to_address()
         ));
 
-    assert_eq!(false, bond_contract.contract_is_ready());
+    assert!(!bond_contract.contract_is_ready());
 
     bond_contract
         .bond_payment_token()
         .set(managed_token_id!(b"TEST-1234"));
 
-    assert_eq!(false, bond_contract.contract_is_ready());
+    assert!(!bond_contract.contract_is_ready());
 
     bond_contract.lock_periods().insert(1);
 
-    assert_eq!(true, bond_contract.contract_is_ready());
+    assert!(bond_contract.contract_is_ready());
 
     bond_contract.lock_periods().remove(&1);
 
-    assert_eq!(false, bond_contract.contract_is_ready());
+    assert!(!bond_contract.contract_is_ready());
 
     bond_contract.lock_periods().insert(1);
 
-    assert_eq!(true, bond_contract.contract_is_ready());
+    assert!(bond_contract.contract_is_ready());
 
     bond_contract.contract_state().clear();
 
-    assert_eq!(false, bond_contract.contract_is_ready());
+    assert!(!bond_contract.contract_is_ready());
 }

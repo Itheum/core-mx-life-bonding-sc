@@ -1,7 +1,7 @@
 use multiversx_sc::{imports::SingleValue, types::BigUint};
 use multiversx_sc_scenario::{
     imports::{
-        Account, AddressValue, BytesValue, CheckAccount, CheckStateStep, ScQueryMandos,
+        Account, AddressValue, BytesValue, CheckAccount, CheckStateStep,
         ScQueryStep, SetStateStep, TransferStep, TxExpect,
     },
     managed_address, managed_token_id,
@@ -11,7 +11,7 @@ use core_mx_life_bonding_sc::storage::{Bond, ProxyTrait};
 use core_mx_life_bonding_sc::views::ProxyTrait as _;
 
 use crate::bonding_state::bonding_state::{
-    ContractState, BONDING_CONTRACT_ADDRESS_EXPR, DATA_NFT_IDENTIFIER, DATA_NFT_IDENTIFIER_EXPR,
+    ContractState, DATA_NFT_IDENTIFIER, DATA_NFT_IDENTIFIER_EXPR,
     FIRST_USER_ADDRESS_EXPR, ITHEUM_TOKEN_IDENTIFIER, ITHEUM_TOKEN_IDENTIFIER_EXPR,
     MINTER_CONTRACT_ADDRESS_EXPR, OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
 };

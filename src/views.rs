@@ -80,14 +80,12 @@ pub trait ViewsModule:
         let compensation_id = self.compensations_ids().get_id((token_identifier, nonce));
         if compensation_id == 0 {
             None
+        } else if self.address_refund(&address, compensation_id).is_empty() {
+            None
         } else {
-            if self.address_refund(&address, compensation_id).is_empty() {
-                None
-            } else {
-                self.address_refund(&address, compensation_id).get();
-                let refund = self.address_refund(&address, compensation_id).get();
-                Some(refund)
-            }
+            self.address_refund(&address, compensation_id).get();
+            let refund = self.address_refund(&address, compensation_id).get();
+            Some(refund)
         }
     }
 
@@ -172,20 +170,20 @@ pub trait ViewsModule:
 
         // Calculate the average bond score
         let bond_count = BigUint::from(bonds.len() as u64);
-        let average_score = total_score / bond_count;
+        
 
-        average_score
+        total_score / bond_count
     }
 
     #[view(getAddressBondsTotalValue)]
     fn get_address_bonds_total_value(&self, address: ManagedAddress<Self::Api>) -> BigUint {
-        let total_value = self
+        
+        self
             .address_bonds(&address)
             .into_iter()
             .fold(BigUint::zero(), |acc, bond_id| {
                 acc + self.remaining_amount(bond_id).get()
-            });
-        total_value
+            })
     }
 
     #[view(getAllBonds)]

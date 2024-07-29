@@ -23,16 +23,16 @@ checksum = "b048fb63fd8b5923fc5aa7b340d8e156aec7ec02f0c78fa8a6ddc2613f6f71de"
 [[package]]
 name = "core-mx-life-bonding-sc"
 version = "2.0.0"
+source = "git+https://github.com/Itheum/core-mx-life-bonding-sc?branch=develop#c51654efe43dd071737ee3de4ee42f0842613f49"
 dependencies = [
- "core-mx-liveliness-stake",
  "multiversx-sc",
 ]
 
 [[package]]
 name = "core-mx-life-bonding-sc"
-version = "2.0.0"
-source = "git+https://github.com/Itheum/core-mx-life-bonding-sc?branch=develop#c51654efe43dd071737ee3de4ee42f0842613f49"
+version = "3.0.0"
 dependencies = [
+ "core-mx-liveliness-stake",
  "multiversx-sc",
 ]
 
@@ -40,7 +40,7 @@ dependencies = [
 name = "core-mx-life-bonding-sc-wasm"
 version = "0.0.0"
 dependencies = [
- "core-mx-life-bonding-sc 2.0.0",
+ "core-mx-life-bonding-sc 3.0.0",
  "multiversx-sc-wasm-adapter",
 ]
 
@@ -49,7 +49,7 @@ name = "core-mx-liveliness-stake"
 version = "0.0.0"
 source = "git+https://github.com/Itheum/core-mx-liveliness-stake.git?branch=main#36b08f1e279d32af939e1a32df449952ce074102"
 dependencies = [
- "core-mx-life-bonding-sc 2.0.0 (git+https://github.com/Itheum/core-mx-life-bonding-sc?branch=develop)",
+ "core-mx-life-bonding-sc 2.0.0",
  "multiversx-sc",
 ]
 
