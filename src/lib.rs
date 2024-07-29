@@ -49,8 +49,9 @@ pub trait LifeBondingContract:
 
     #[upgrade]
     fn upgrade(&self) {
-        self.contract_state().set(State::Inactive);
-        self.contract_state_event(State::Inactive);
+        // TO BE UNCOMMENTED FOR PROD
+        // self.contract_state().set(State::Inactive);
+        // self.contract_state_event(State::Inactive);
 
         // NEEDS TO BE USED AS STORAGE WAS NOT IMPLEMENTED
         // DEVNET
@@ -429,5 +430,8 @@ pub trait LifeBondingContract:
         bond_cache.bond_timestamp = current_timestamp;
         bond_cache.bond_amount += &payment.amount;
         bond_cache.remaining_amount += &payment.amount;
+
+        self.total_bond_amount()
+            .update(|value| *value += &payment.amount);
     }
 }
