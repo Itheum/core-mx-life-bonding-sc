@@ -466,12 +466,14 @@ pub trait LifeBondingContract:
 
         require!(
             !self
-                .address_vault_nonce(&caller, &token_identifier)
+                .address_vault_nonce(&original_caller, &token_identifier)
                 .is_empty(),
             ERR_VAULT_NONCE_NOT_SET
         );
 
-        let vault_nonce = self.address_vault_nonce(&caller, &token_identifier).get();
+        let vault_nonce = self
+            .address_vault_nonce(&original_caller, &token_identifier)
+            .get();
 
         let bond_id = self
             .bonds_ids()
