@@ -189,6 +189,25 @@ where
             .original_result()
     }
 
+    pub fn stake_rewards<
+        Arg0: ProxyArg<ManagedAddress<Env::Api>>,
+        Arg1: ProxyArg<TokenIdentifier<Env::Api>>,
+        Arg2: ProxyArg<BigUint<Env::Api>>,
+    >(
+        self,
+        original_caller: Arg0,
+        token_identifier: Arg1,
+        amount: Arg2,
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, ()> {
+        self.wrapped_tx
+            .payment(NotPayable)
+            .raw_call("stakeRewards")
+            .argument(&original_caller)
+            .argument(&token_identifier)
+            .argument(&amount)
+            .original_result()
+    }
+
     pub fn compensation_blacklist<
         Arg0: ProxyArg<u64>,
     >(
@@ -837,7 +856,7 @@ where
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode)]
+#[derive(TopEncode, TopDecode)]
 pub struct ContractConfiguration<Api>
 where
     Api: ManagedTypeApi,

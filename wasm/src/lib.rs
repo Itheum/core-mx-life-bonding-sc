@@ -6,9 +6,9 @@
 
 // Init:                                 1
 // Upgrade:                              1
-// Endpoints:                           55
+// Endpoints:                           56
 // Async Callback (empty):               1
-// Total number of exported functions:  58
+// Total number of exported functions:  59
 
 #![no_std]
 
@@ -27,6 +27,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         claimRefund => claim_refund
         setVaultNonce => set_vault_nonce
         topUpVault => top_up_vault
+        stakeRewards => stake_rewards
         getCompensationBlacklist => compensation_blacklist
         getTotalBondAmount => total_bond_amount
         getAddressVaultNone => address_vault_nonce

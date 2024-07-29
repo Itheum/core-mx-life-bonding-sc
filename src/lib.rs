@@ -434,4 +434,44 @@ pub trait LifeBondingContract:
         self.total_bond_amount()
             .update(|value| *value += &payment.amount);
     }
+
+    #[endpoint(stakeRewards)]
+    fn stake_rewards(
+        &self,
+        original_caller: ManagedAddress,
+        token_identifier: TokenIdentifier,
+        amount: BigUint,
+    ) {
+        let caller = self.blockchain().get_caller();
+        require!(
+            caller == self.liveliness_stake_address().get(),
+            ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS
+        );
+
+        require!(
+            !self
+                .address_vault_nonce(&caller, &token_identifier)
+                .is_empty(),
+            ERR_VAULT_NONCE_NOT_SET
+        );
+
+        let vault_nonce = self.address_vault_nonce(&caller, &token_identifier).get();
+
+        let bond_id = self
+            .bonds_ids()
+            .get_id_non_zero((token_identifier.clone(), vault_nonce));
+
+        let mut bond_cache = BondCache::new(self, bond_id);
+
+        require!(bond_cache.address == original_caller, ERR_BOND_NOT_FOUND);
+
+        let current_timestamp = self.blockchain().get_block_timestamp();
+
+        bond_cache.unbond_timestamp = current_timestamp + bond_cache.lock_period;
+        bond_cache.bond_timestamp = current_timestamp;
+        bond_cache.bond_amount += &amount;
+        bond_cache.remaining_amount += &amount;
+
+        self.total_bond_amount().update(|value| *value += amount);
+    }
 }
