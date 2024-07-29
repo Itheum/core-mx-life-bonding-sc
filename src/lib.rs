@@ -165,7 +165,7 @@ pub trait LifeBondingContract:
             .compensations_ids()
             .get_id_non_zero((token_identifier, nonce));
 
-        let bond_cache = BondCache::new(self, bond_id);
+        let mut bond_cache = BondCache::new(self, bond_id);
 
         require!(bond_cache.address == caller, ERR_BOND_NOT_FOUND);
 
@@ -225,6 +225,8 @@ pub trait LifeBondingContract:
             &(&bond_cache.remaining_amount - &penalty_amount),
             &penalty_amount,
         );
+
+        bond_cache.clear();
 
         self.bonds().swap_remove(&bond_id);
         self.address_bonds(&caller).swap_remove(&bond_id);
@@ -403,6 +405,12 @@ pub trait LifeBondingContract:
     #[endpoint(topUpVault)]
     fn top_up_vault(&self, token_identifier: TokenIdentifier, nonce: u64) {
         let caller = self.blockchain().get_caller();
+
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .generate_rewards()
+            .sync_call();
 
         require!(
             self.address_vault_nonce(&caller, &token_identifier).get() == nonce,
