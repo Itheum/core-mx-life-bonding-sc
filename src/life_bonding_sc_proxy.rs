@@ -878,7 +878,7 @@ pub enum State {
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode, ManagedVecItem)]
+#[derive(TopEncode, TopDecode)]
 pub enum PenaltyType {
     Minimum,
     Custom,
