@@ -294,3 +294,24 @@ initiateBond() {
     --chain ${CHAIN_ID} \
     --send || return
 }
+
+
+setLivelinessStakeAddress(){
+
+    # $1 = address
+
+    address="0x$(mxpy wallet bech32 --decode ${1})"
+
+    mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "setLivelinessStakeAddress" \
+    --arguments $address \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+
+}
+
+
