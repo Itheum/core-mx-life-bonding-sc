@@ -158,6 +158,7 @@ pub trait ViewsModule:
             let bond: Bond<<Self as ContractBase>::Api> = self.get_bond(bond_id);
             let difference = bond.unbond_timestamp - timestamp;
 
+            bond_count += &bond.remaining_amount;
             if timestamp >= bond.unbond_timestamp {
                 continue;
             }
@@ -167,7 +168,6 @@ pub trait ViewsModule:
                 / BigUint::from(1_000_000_000u64);
 
             total_score += bond_score * &bond.remaining_amount;
-            bond_count += &bond.remaining_amount;
         }
 
         // Calculate the weighted average bond score
