@@ -227,6 +227,15 @@ where
             .original_result()
     }
 
+    pub fn liveliness_stake_address(
+        self,
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, ManagedAddress<Env::Api>> {
+        self.wrapped_tx
+            .payment(NotPayable)
+            .raw_call("getLivelinessStakeAddress")
+            .original_result()
+    }
+
     pub fn get_bond<
         Arg0: ProxyArg<u64>,
     >(
@@ -670,6 +679,19 @@ where
             .payment(NotPayable)
             .raw_call("setWithdrawPenalty")
             .argument(&penalty)
+            .original_result()
+    }
+
+    pub fn set_liveliness_stake_address<
+        Arg0: ProxyArg<ManagedAddress<Env::Api>>,
+    >(
+        self,
+        address: Arg0,
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, ()> {
+        self.wrapped_tx
+            .payment(NotPayable)
+            .raw_call("setLivelinessStakeAddress")
+            .argument(&address)
             .original_result()
     }
 
