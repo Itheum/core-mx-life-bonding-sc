@@ -109,6 +109,12 @@ pub trait LifeBondingContract:
 
         require!(payment.amount == bond_amount, ERR_INVALID_AMOUNT);
 
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .generate_rewards()
+            .sync_call();
+
         let current_timestamp = self.blockchain().get_block_timestamp();
         let unbond_timestamp = current_timestamp + lock_period_seconds;
 
@@ -145,12 +151,6 @@ pub trait LifeBondingContract:
 
         self.bond_event(&self.get_bond(bond_id));
         self.compensation_event(&self.get_compensation(compensation_id));
-
-        self.tx()
-            .to(self.liveliness_stake_address().get())
-            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
-            .generate_rewards()
-            .sync_call();
     }
 
     #[endpoint(withdraw)]
@@ -168,6 +168,12 @@ pub trait LifeBondingContract:
         let mut bond_cache = BondCache::new(self, bond_id);
 
         require!(bond_cache.address == caller, ERR_BOND_NOT_FOUND);
+
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .generate_rewards()
+            .sync_call();
 
         let current_timestamp = self.blockchain().get_block_timestamp();
 
@@ -211,12 +217,6 @@ pub trait LifeBondingContract:
                 .update(|value| *value -= &bond_cache.remaining_amount);
 
             self.compensations().swap_remove(&compensation_id);
-
-            self.tx()
-                .to(self.liveliness_stake_address().get())
-                .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
-                .generate_rewards()
-                .sync_call();
         }
 
         self.withdraw_event(
@@ -235,6 +235,13 @@ pub trait LifeBondingContract:
     #[endpoint(renew)]
     fn renew(&self, token_identifier: TokenIdentifier, nonce: u64) {
         require_contract_ready!(self, ERR_CONTRACT_NOT_READY);
+
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .generate_rewards()
+            .sync_call();
+
         let caller = self.blockchain().get_caller();
 
         let bond_id = self.bonds_ids().get_id_non_zero((token_identifier, nonce));
