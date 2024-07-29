@@ -198,9 +198,8 @@ where
         original_caller: Arg0,
         token_identifier: Arg1,
         amount: Arg2,
-    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, ()> {
+    ) -> TxTypedCall<Env, From, To, (), Gas, ()> {
         self.wrapped_tx
-            .payment(NotPayable)
             .raw_call("stakeRewards")
             .argument(&original_caller)
             .argument(&token_identifier)
@@ -872,14 +871,14 @@ where
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode)]
+#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode, ManagedVecItem)]
 pub enum State {
     Inactive,
     Active,
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode)]
+#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode, ManagedVecItem)]
 pub enum PenaltyType {
     Minimum,
     Custom,
