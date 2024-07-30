@@ -23,6 +23,7 @@ pub mod contexts;
 pub mod errors;
 pub mod events;
 pub mod life_bonding_sc_proxy;
+pub mod proxy_contracts;
 pub mod storage;
 pub mod views;
 #[multiversx_sc::contract]
@@ -111,7 +112,7 @@ pub trait LifeBondingContract:
 
         self.tx()
             .to(self.liveliness_stake_address().get())
-            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .typed(proxy_contracts::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
             .generate_rewards()
             .sync_call();
 
@@ -171,7 +172,7 @@ pub trait LifeBondingContract:
 
         self.tx()
             .to(self.liveliness_stake_address().get())
-            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .typed(proxy_contracts::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
             .claim_rewards(OptionalValue::Some(caller.clone()))
             .sync_call();
 
@@ -238,7 +239,7 @@ pub trait LifeBondingContract:
 
         self.tx()
             .to(self.liveliness_stake_address().get())
-            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .typed(proxy_contracts::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
             .generate_rewards()
             .sync_call();
 
@@ -415,7 +416,7 @@ pub trait LifeBondingContract:
 
         self.tx()
             .to(self.liveliness_stake_address().get())
-            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .typed(proxy_contracts::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
             .claim_rewards(OptionalValue::Some(caller.clone()))
             .sync_call();
 
@@ -472,7 +473,7 @@ pub trait LifeBondingContract:
 
         self.tx()
             .to(self.liveliness_stake_address().get())
-            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .typed(proxy_contracts::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
             .claim_rewards(OptionalValue::Some(caller.clone()))
             .sync_call();
 

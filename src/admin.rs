@@ -9,7 +9,7 @@ use crate::{
         ERR_COMPENSATION_NOT_FOUND, ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP,
         ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_IN_STORAGE, ERR_NOT_PRIVILEGED,
     },
-    events, only_privileged,
+    events, only_privileged, proxy_contracts,
     storage::{self, PenaltyType},
 };
 
@@ -132,6 +132,12 @@ pub trait AdminModule:
         let mut bond_cache = BondCache::new(self, bond_id);
         let mut compensation_cache = CompensationCache::new(self, compensation_id);
 
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(proxy_contracts::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .generate_rewards()
+            .sync_call();
+
         let penalty = match penalty {
             PenaltyType::Minimum => self.minimum_penalty().get(),
             PenaltyType::Custom => {
@@ -170,12 +176,6 @@ pub trait AdminModule:
         bond_cache.remaining_amount -= &penalty_amount;
 
         compensation_cache.accumulated_amount += &penalty_amount;
-
-        self.tx()
-            .to(self.liveliness_stake_address().get())
-            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
-            .generate_rewards()
-            .sync_call();
     }
 
     #[endpoint(modifyBond)]
