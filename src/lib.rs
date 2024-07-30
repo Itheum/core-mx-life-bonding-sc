@@ -9,7 +9,7 @@ use crate::{
         ERR_BOND_NOT_FOUND, ERR_CONTRACT_NOT_READY, ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS,
         ERR_INVALID_AMOUNT, ERR_INVALID_LOCK_PERIOD, ERR_INVALID_TIMELINE_TO_PROOF,
         ERR_INVALID_TIMELINE_TO_REFUND, ERR_INVALID_TOKEN_IDENTIFIER,
-        ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND,
+        ERR_PENALTIES_EXCEED_WITHDRAWAL_AMOUNT, ERR_REFUND_NOT_FOUND, ERR_VAULT_NONCE_NOT_SET,
     },
     storage::Refund,
 };
@@ -23,6 +23,7 @@ pub mod contexts;
 pub mod errors;
 pub mod events;
 pub mod life_bonding_sc_proxy;
+pub mod proxy_contracts;
 pub mod storage;
 pub mod views;
 #[multiversx_sc::contract]
@@ -49,13 +50,14 @@ pub trait LifeBondingContract:
 
     #[upgrade]
     fn upgrade(&self) {
-        self.contract_state().set(State::Inactive);
-        self.contract_state_event(State::Inactive);
+        // TO BE UNCOMMENTED FOR PROD
+        // self.contract_state().set(State::Inactive);
+        // self.contract_state_event(State::Inactive);
 
         // NEEDS TO BE USED AS STORAGE WAS NOT IMPLEMENTED
         // DEVNET
-        self.total_bond_amount()
-            .set(BigUint::from(1313800000000000000000u128));
+        // self.total_bond_amount()
+        //     .set(BigUint::from(1313800000000000000000u128));
 
         // MAINNET
         // self.total_bond_amount()
@@ -108,6 +110,12 @@ pub trait LifeBondingContract:
 
         require!(payment.amount == bond_amount, ERR_INVALID_AMOUNT);
 
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(proxy_contracts::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .generate_rewards()
+            .sync_call();
+
         let current_timestamp = self.blockchain().get_block_timestamp();
         let unbond_timestamp = current_timestamp + lock_period_seconds;
 
@@ -158,9 +166,15 @@ pub trait LifeBondingContract:
             .compensations_ids()
             .get_id_non_zero((token_identifier, nonce));
 
-        let bond_cache = BondCache::new(self, bond_id);
+        let mut bond_cache = BondCache::new(self, bond_id);
 
         require!(bond_cache.address == caller, ERR_BOND_NOT_FOUND);
+
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(proxy_contracts::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .claim_rewards(OptionalValue::Some(caller.clone()))
+            .sync_call();
 
         let current_timestamp = self.blockchain().get_block_timestamp();
 
@@ -188,6 +202,9 @@ pub trait LifeBondingContract:
                 &(&bond_cache.remaining_amount - &penalty_amount),
             );
 
+            self.total_bond_amount()
+                .update(|value| *value -= &(&bond_cache.remaining_amount + &penalty_amount));
+
             compensation_cache.accumulated_amount += &penalty_amount;
         } else {
             self.send().direct_esdt(
@@ -196,6 +213,9 @@ pub trait LifeBondingContract:
                 0u64,
                 &bond_cache.remaining_amount,
             );
+
+            self.total_bond_amount()
+                .update(|value| *value -= &bond_cache.remaining_amount);
 
             self.compensations().swap_remove(&compensation_id);
         }
@@ -207,12 +227,22 @@ pub trait LifeBondingContract:
             &penalty_amount,
         );
 
+        bond_cache.clear();
+
         self.bonds().swap_remove(&bond_id);
+        self.address_bonds(&caller).swap_remove(&bond_id);
     }
 
     #[endpoint(renew)]
     fn renew(&self, token_identifier: TokenIdentifier, nonce: u64) {
         require_contract_ready!(self, ERR_CONTRACT_NOT_READY);
+
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(proxy_contracts::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .generate_rewards()
+            .sync_call();
+
         let caller = self.blockchain().get_caller();
 
         let bond_id = self.bonds_ids().get_id_non_zero((token_identifier, nonce));
@@ -361,5 +391,158 @@ pub trait LifeBondingContract:
         {
             self.compensations().swap_remove(&compensation_id);
         }
+    }
+
+    #[endpoint(setVaultNonce)]
+    fn set_vault_nonce(&self, token_identifier: TokenIdentifier, nonce: u64) {
+        let caller = self.blockchain().get_caller();
+
+        let bond_id = self
+            .bonds_ids()
+            .get_id_non_zero((token_identifier.clone(), nonce));
+
+        let bond_cache = BondCache::new(self, bond_id);
+
+        require!(bond_cache.address == caller, ERR_BOND_NOT_FOUND);
+
+        self.address_vault_nonce(&caller, &token_identifier)
+            .set(nonce);
+    }
+
+    #[payable("*")]
+    #[endpoint(topUpVault)]
+    fn top_up_vault(&self, token_identifier: TokenIdentifier, nonce: u64) {
+        let caller = self.blockchain().get_caller();
+
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(proxy_contracts::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .claim_rewards(OptionalValue::Some(caller.clone()))
+            .sync_call();
+
+        require!(
+            self.address_vault_nonce(&caller, &token_identifier).get() == nonce,
+            ERR_VAULT_NONCE_NOT_SET
+        );
+
+        let bond_id = self
+            .bonds_ids()
+            .get_id_non_zero((token_identifier.clone(), nonce));
+
+        let mut bond_cache = BondCache::new(self, bond_id);
+
+        require!(bond_cache.address == caller, ERR_BOND_NOT_FOUND);
+
+        let payment = self.call_value().single_esdt();
+
+        require!(
+            payment.token_identifier == self.bond_payment_token().get(),
+            ERR_INVALID_TOKEN_IDENTIFIER
+        );
+
+        let current_timestamp = self.blockchain().get_block_timestamp();
+
+        bond_cache.unbond_timestamp = current_timestamp + bond_cache.lock_period;
+        bond_cache.bond_timestamp = current_timestamp;
+        bond_cache.bond_amount += &payment.amount;
+        bond_cache.remaining_amount += &payment.amount;
+
+        self.total_bond_amount()
+            .update(|value| *value += &payment.amount);
+    }
+
+    #[payable("*")]
+    #[endpoint(topUpAddressVault)]
+    fn top_up_address_vault(
+        &self,
+        address: ManagedAddress,
+        token_identifier: TokenIdentifier,
+        nonce: u64,
+    ) {
+        let caller = self.blockchain().get_caller();
+
+        require!(
+            self.address_vault_nonce(&address, &token_identifier).get() == nonce,
+            ERR_VAULT_NONCE_NOT_SET
+        );
+
+        require!(
+            caller == self.top_up_administrator().get(),
+            ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS
+        );
+
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(proxy_contracts::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .claim_rewards(OptionalValue::Some(caller.clone()))
+            .sync_call();
+
+        let bond_id = self
+            .bonds_ids()
+            .get_id_non_zero((token_identifier.clone(), nonce));
+
+        let mut bond_cache = BondCache::new(self, bond_id);
+
+        require!(bond_cache.address == caller, ERR_BOND_NOT_FOUND);
+
+        let payment = self.call_value().single_esdt();
+
+        require!(
+            payment.token_identifier == self.bond_payment_token().get(),
+            ERR_INVALID_TOKEN_IDENTIFIER
+        );
+
+        let current_timestamp = self.blockchain().get_block_timestamp();
+
+        bond_cache.unbond_timestamp = current_timestamp + bond_cache.lock_period;
+        bond_cache.bond_timestamp = current_timestamp;
+        bond_cache.bond_amount += &payment.amount;
+        bond_cache.remaining_amount += &payment.amount;
+
+        self.total_bond_amount()
+            .update(|value| *value += &payment.amount);
+    }
+
+    #[payable("*")]
+    #[endpoint(stakeRewards)]
+    fn stake_rewards(
+        &self,
+        original_caller: ManagedAddress,
+        token_identifier: TokenIdentifier,
+        amount: BigUint,
+    ) {
+        let caller = self.blockchain().get_caller();
+        require!(
+            caller == self.liveliness_stake_address().get(),
+            ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS
+        );
+
+        require!(
+            !self
+                .address_vault_nonce(&original_caller, &token_identifier)
+                .is_empty(),
+            ERR_VAULT_NONCE_NOT_SET
+        );
+
+        let vault_nonce = self
+            .address_vault_nonce(&original_caller, &token_identifier)
+            .get();
+
+        let bond_id = self
+            .bonds_ids()
+            .get_id_non_zero((token_identifier.clone(), vault_nonce));
+
+        let mut bond_cache = BondCache::new(self, bond_id);
+
+        require!(bond_cache.address == original_caller, ERR_BOND_NOT_FOUND);
+
+        let current_timestamp = self.blockchain().get_block_timestamp();
+
+        bond_cache.unbond_timestamp = current_timestamp + bond_cache.lock_period;
+        bond_cache.bond_timestamp = current_timestamp;
+        bond_cache.bond_amount += &amount;
+        bond_cache.remaining_amount += &amount;
+
+        self.total_bond_amount().update(|value| *value += amount);
     }
 }

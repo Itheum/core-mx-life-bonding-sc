@@ -1,4 +1,3 @@
-use std::cell::Ref;
 
 use core_mx_life_bonding_sc::{
     storage::{PenaltyType, Refund},
@@ -11,7 +10,6 @@ use multiversx_sc::{
 use multiversx_sc_scenario::{
     api::StaticApi,
     managed_address, managed_token_id,
-    multiversx_chain_vm::vm_hooks::StaticApiVMHooksHandler,
     scenario_model::{
         AddressValue, CheckAccount, CheckStateStep, ScQueryStep, SetStateStep, TransferStep,
         TxExpect,

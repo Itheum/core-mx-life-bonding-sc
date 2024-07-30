@@ -78,6 +78,14 @@ pub trait ConfigModule: storage::StorageModule + events::EventsModule {
         if self.lock_periods().is_empty() {
             is_ready = false;
         }
+
+        if self.liveliness_stake_address().is_empty() {
+            is_ready = false;
+        }
+
+        if self.top_up_administrator().is_empty() {
+            is_ready = false;
+        }
         is_ready
     }
 
@@ -88,6 +96,10 @@ pub trait ConfigModule: storage::StorageModule + events::EventsModule {
     #[view(getAdministrator)]
     #[storage_mapper("administrator")]
     fn administrator(&self) -> SingleValueMapper<ManagedAddress>;
+
+    #[view(getTopUpAdministrator)]
+    #[storage_mapper("top_up_administrator")]
+    fn top_up_administrator(&self) -> SingleValueMapper<ManagedAddress>;
 
     #[view(getAcceptedCallers)]
     #[storage_mapper("accepted_callers")]

@@ -80,14 +80,12 @@ pub trait ViewsModule:
         let compensation_id = self.compensations_ids().get_id((token_identifier, nonce));
         if compensation_id == 0 {
             None
+        } else if self.address_refund(&address, compensation_id).is_empty() {
+            None
         } else {
-            if self.address_refund(&address, compensation_id).is_empty() {
-                None
-            } else {
-                self.address_refund(&address, compensation_id).get();
-                let refund = self.address_refund(&address, compensation_id).get();
-                Some(refund)
-            }
+            self.address_refund(&address, compensation_id).get();
+            let refund = self.address_refund(&address, compensation_id).get();
+            Some(refund)
         }
     }
 
@@ -154,11 +152,13 @@ pub trait ViewsModule:
         }
 
         let mut total_score = BigUint::zero();
+        let mut bond_count = BigUint::zero();
 
         for bond_id in bonds.iter() {
             let bond: Bond<<Self as ContractBase>::Api> = self.get_bond(bond_id);
             let difference = bond.unbond_timestamp - timestamp;
 
+            bond_count += &bond.remaining_amount;
             if timestamp >= bond.unbond_timestamp {
                 continue;
             }
@@ -167,25 +167,34 @@ pub trait ViewsModule:
                 * difference)
                 / BigUint::from(1_000_000_000u64);
 
-            total_score += bond_score;
+            total_score += bond_score * &bond.remaining_amount;
         }
 
-        // Calculate the average bond score
-        let bond_count = BigUint::from(bonds.len() as u64);
-        let average_score = total_score / bond_count;
+        // Calculate the weighted average bond score
 
-        average_score
+        total_score / bond_count
     }
 
     #[view(getAddressBondsTotalValue)]
-    fn get_address_bonds_total_value(&self, address: ManagedAddress<Self::Api>) -> BigUint {
-        let total_value = self
-            .address_bonds(&address)
+    fn get_address_bonds_total_value(&self, address: &ManagedAddress<Self::Api>) -> BigUint {
+        self.address_bonds(address)
             .into_iter()
             .fold(BigUint::zero(), |acc, bond_id| {
                 acc + self.remaining_amount(bond_id).get()
-            });
-        total_value
+            })
+    }
+
+    #[view(getAddressBondsInfo)]
+    fn get_address_bonds_info(&self, address: ManagedAddress) -> (BigUint, BigUint, BigUint) {
+        let address_bonds_value = self.get_address_bonds_total_value(&address);
+        let address_bonds_avg_score = self.get_address_bonds_avg_score(address);
+        let total_bond_amount = self.total_bond_amount().get();
+
+        (
+            total_bond_amount,
+            address_bonds_value,
+            address_bonds_avg_score,
+        )
     }
 
     #[view(getAllBonds)]

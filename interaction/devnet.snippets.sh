@@ -1,7 +1,7 @@
 PROXY=https://devnet-gateway.multiversx.com
 CHAIN_ID="D"
 
-WALLET="./wallet.pem"
+WALLET="../wallet_dev.pem"
 USER="./wallet2.pem"
 
 ADDRESS=$(mxpy data load --key=address-devnet)
@@ -16,7 +16,7 @@ TOKEN_HEX="0x$(echo -n ${TOKEN} | xxd -p -u | tr -d '\n')"
 # --bytecode output-docker/core-mx-life-bonding-sc/core-mx-life-bonding-sc.wasm \
 deploy(){
     mxpy --verbose contract deploy \
-    --bytecode output-docker/core-mx-life-bonding-sc/core-mx-life-bonding-sc.wasm \
+    --bytecode output/core-mx-life-bonding-sc.wasm \
     --outfile deployOutput \
     --metadata-not-readable \
     --metadata-payable-by-sc \
@@ -42,7 +42,7 @@ deploy(){
 # in below code example we added --metadata-payable to add PAYABLE to the prop of the SC and removed --metadata-not-readable to make it READABLE
 upgrade(){
     mxpy --verbose contract upgrade ${ADDRESS} \
-    --bytecode output-docker/core-mx-life-bonding-sc/core-mx-life-bonding-sc.wasm \
+    --bytecode output/core-mx-life-bonding-sc.wasm \
     --metadata-not-readable \
     --metadata-payable-by-sc \
     --pem ${WALLET} \
@@ -290,6 +290,43 @@ initiateBond() {
     --gas-limit=20000000 \
     --function "initiateBond" \
     --arguments $address $token_identifier $3 \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+}
+
+
+setLivelinessStakeAddress(){
+
+    # $1 = address
+
+    address="0x$(mxpy wallet bech32 --decode ${1})"
+
+    mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "setLivelinessStakeAddress" \
+    --arguments $address \
+    --proxy ${PROXY} \
+    --chain ${CHAIN_ID} \
+    --send || return
+
+}
+
+
+setTopUpAdministrator(){
+
+    # $1 = address
+
+    address="0x$(mxpy wallet bech32 --decode ${1})"
+
+    mxpy --verbose contract call ${ADDRESS} \
+    --recall-nonce \
+    --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function "setTopUpAdministrator" \
+    --arguments $address \
     --proxy ${PROXY} \
     --chain ${CHAIN_ID} \
     --send || return

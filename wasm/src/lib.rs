@@ -6,9 +6,9 @@
 
 // Init:                                 1
 // Upgrade:                              1
-// Endpoints:                           50
+// Endpoints:                           60
 // Async Callback (empty):               1
-// Total number of exported functions:  53
+// Total number of exported functions:  63
 
 #![no_std]
 
@@ -25,8 +25,14 @@ multiversx_sc_wasm_adapter::endpoints! {
         renew => renew
         proof => add_proof
         claimRefund => claim_refund
+        setVaultNonce => set_vault_nonce
+        topUpVault => top_up_vault
+        topUpAddressVault => top_up_address_vault
+        stakeRewards => stake_rewards
         getCompensationBlacklist => compensation_blacklist
         getTotalBondAmount => total_bond_amount
+        getAddressVaultNone => address_vault_nonce
+        getLivelinessStakeAddress => liveliness_stake_address
         getBond => get_bond
         getCompensation => get_compensation
         getCompensations => get_compensations
@@ -38,6 +44,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         getAddressBonds => get_address_bonds
         getAddressBondsAvgScore => get_address_bonds_avg_score
         getAddressBondsTotalValue => get_address_bonds_total_value
+        getAddressBondsInfo => get_address_bonds_info
         getAllBonds => get_all_bonds
         getPagedBonds => get_paged_bonds
         getBondsLen => get_bonds_len
@@ -60,9 +67,12 @@ multiversx_sc_wasm_adapter::endpoints! {
         setMinimumPenalty => set_minimum_penalty
         setMaximumPenalty => set_maximum_penalty
         setWithdrawPenalty => set_withdraw_penalty
+        setLivelinessStakeAddress => set_liveliness_stake_address
+        setTopUpAdministrator => set_top_up_administrator
         setAdministrator => set_administrator
         getContractState => contract_state
         getAdministrator => administrator
+        getTopUpAdministrator => top_up_administrator
         getAcceptedCallers => accepted_callers
         getBondPaymentToken => bond_payment_token
         getLockPeriods => lock_periods

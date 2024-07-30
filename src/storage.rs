@@ -173,4 +173,18 @@ pub trait StorageModule {
     #[view(getTotalBondAmount)]
     #[storage_mapper("total_bond_amount")]
     fn total_bond_amount(&self) -> SingleValueMapper<BigUint>;
+
+    // NFMEid storage
+
+    #[view(getAddressVaultNone)]
+    #[storage_mapper("address_vault_nonce")]
+    fn address_vault_nonce(
+        &self,
+        address: &ManagedAddress,
+        token_identifier: &TokenIdentifier,
+    ) -> SingleValueMapper<u64>;
+
+    #[view(getLivelinessStakeAddress)]
+    #[storage_mapper("liveliness_stake_address")]
+    fn liveliness_stake_address(&self) -> SingleValueMapper<ManagedAddress>;
 }

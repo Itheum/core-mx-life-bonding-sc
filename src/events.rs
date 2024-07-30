@@ -117,4 +117,10 @@ pub trait EventsModule {
 
     #[event("set_administrator_event")]
     fn set_administrator_event(&self, #[indexed] administrator: &ManagedAddress);
+
+    #[event("set_liveliness_stake_address")]
+    fn set_liveliness_stake_address_event(&self, #[indexed] address: &ManagedAddress);
+
+    #[event("set_top_up_administrator_event")]
+    fn set_top_up_administrator_event(&self, #[indexed] top_up_administrator: &ManagedAddress);
 }

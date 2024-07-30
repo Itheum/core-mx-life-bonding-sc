@@ -158,6 +158,73 @@ where
             .original_result()
     }
 
+    pub fn set_vault_nonce<
+        Arg0: ProxyArg<TokenIdentifier<Env::Api>>,
+        Arg1: ProxyArg<u64>,
+    >(
+        self,
+        token_identifier: Arg0,
+        nonce: Arg1,
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, ()> {
+        self.wrapped_tx
+            .payment(NotPayable)
+            .raw_call("setVaultNonce")
+            .argument(&token_identifier)
+            .argument(&nonce)
+            .original_result()
+    }
+
+    pub fn top_up_vault<
+        Arg0: ProxyArg<TokenIdentifier<Env::Api>>,
+        Arg1: ProxyArg<u64>,
+    >(
+        self,
+        token_identifier: Arg0,
+        nonce: Arg1,
+    ) -> TxTypedCall<Env, From, To, (), Gas, ()> {
+        self.wrapped_tx
+            .raw_call("topUpVault")
+            .argument(&token_identifier)
+            .argument(&nonce)
+            .original_result()
+    }
+
+    pub fn top_up_address_vault<
+        Arg0: ProxyArg<ManagedAddress<Env::Api>>,
+        Arg1: ProxyArg<TokenIdentifier<Env::Api>>,
+        Arg2: ProxyArg<u64>,
+    >(
+        self,
+        address: Arg0,
+        token_identifier: Arg1,
+        nonce: Arg2,
+    ) -> TxTypedCall<Env, From, To, (), Gas, ()> {
+        self.wrapped_tx
+            .raw_call("topUpAddressVault")
+            .argument(&address)
+            .argument(&token_identifier)
+            .argument(&nonce)
+            .original_result()
+    }
+
+    pub fn stake_rewards<
+        Arg0: ProxyArg<ManagedAddress<Env::Api>>,
+        Arg1: ProxyArg<TokenIdentifier<Env::Api>>,
+        Arg2: ProxyArg<BigUint<Env::Api>>,
+    >(
+        self,
+        original_caller: Arg0,
+        token_identifier: Arg1,
+        amount: Arg2,
+    ) -> TxTypedCall<Env, From, To, (), Gas, ()> {
+        self.wrapped_tx
+            .raw_call("stakeRewards")
+            .argument(&original_caller)
+            .argument(&token_identifier)
+            .argument(&amount)
+            .original_result()
+    }
+
     pub fn compensation_blacklist<
         Arg0: ProxyArg<u64>,
     >(
@@ -177,6 +244,31 @@ where
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getTotalBondAmount")
+            .original_result()
+    }
+
+    pub fn address_vault_nonce<
+        Arg0: ProxyArg<ManagedAddress<Env::Api>>,
+        Arg1: ProxyArg<TokenIdentifier<Env::Api>>,
+    >(
+        self,
+        address: Arg0,
+        token_identifier: Arg1,
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, u64> {
+        self.wrapped_tx
+            .payment(NotPayable)
+            .raw_call("getAddressVaultNone")
+            .argument(&address)
+            .argument(&token_identifier)
+            .original_result()
+    }
+
+    pub fn liveliness_stake_address(
+        self,
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, ManagedAddress<Env::Api>> {
+        self.wrapped_tx
+            .payment(NotPayable)
+            .raw_call("getLivelinessStakeAddress")
             .original_result()
     }
 
@@ -331,6 +423,19 @@ where
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getAddressBondsTotalValue")
+            .argument(&address)
+            .original_result()
+    }
+
+    pub fn get_address_bonds_info<
+        Arg0: ProxyArg<ManagedAddress<Env::Api>>,
+    >(
+        self,
+        address: Arg0,
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, (BigUint<Env::Api>, BigUint<Env::Api>, BigUint<Env::Api>)> {
+        self.wrapped_tx
+            .payment(NotPayable)
+            .raw_call("getAddressBondsInfo")
             .argument(&address)
             .original_result()
     }
@@ -626,6 +731,32 @@ where
             .original_result()
     }
 
+    pub fn set_liveliness_stake_address<
+        Arg0: ProxyArg<ManagedAddress<Env::Api>>,
+    >(
+        self,
+        address: Arg0,
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, ()> {
+        self.wrapped_tx
+            .payment(NotPayable)
+            .raw_call("setLivelinessStakeAddress")
+            .argument(&address)
+            .original_result()
+    }
+
+    pub fn set_top_up_administrator<
+        Arg0: ProxyArg<ManagedAddress<Env::Api>>,
+    >(
+        self,
+        address: Arg0,
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, ()> {
+        self.wrapped_tx
+            .payment(NotPayable)
+            .raw_call("setTopUpAdministrator")
+            .argument(&address)
+            .original_result()
+    }
+
     pub fn set_administrator<
         Arg0: ProxyArg<ManagedAddress<Env::Api>>,
     >(
@@ -654,6 +785,15 @@ where
         self.wrapped_tx
             .payment(NotPayable)
             .raw_call("getAdministrator")
+            .original_result()
+    }
+
+    pub fn top_up_administrator(
+        self,
+    ) -> TxTypedCall<Env, From, To, NotPayable, Gas, ManagedAddress<Env::Api>> {
+        self.wrapped_tx
+            .payment(NotPayable)
+            .raw_call("getTopUpAdministrator")
             .original_result()
     }
 
@@ -726,7 +866,7 @@ where
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode, NestedEncode, NestedDecode, ManagedVecItem)]
+#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode, ManagedVecItem)]
 pub struct Bond<Api>
 where
     Api: ManagedTypeApi,
@@ -743,7 +883,7 @@ where
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode, NestedEncode, NestedDecode, ManagedVecItem)]
+#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode, ManagedVecItem)]
 pub struct Compensation<Api>
 where
     Api: ManagedTypeApi,
@@ -757,7 +897,7 @@ where
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode, NestedEncode, NestedDecode, ManagedVecItem)]
+#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode, ManagedVecItem)]
 pub struct Refund<Api>
 where
     Api: ManagedTypeApi,
@@ -784,7 +924,7 @@ where
 }
 
 #[type_abi]
-#[derive(TopEncode, TopDecode, NestedEncode, NestedDecode, ManagedVecItem)]
+#[derive(TopEncode, TopDecode, NestedDecode, NestedEncode, ManagedVecItem)]
 pub enum State {
     Inactive,
     Active,

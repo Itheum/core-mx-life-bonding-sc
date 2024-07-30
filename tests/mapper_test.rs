@@ -28,8 +28,8 @@ fn test_mapper() {
 
     assert_eq!(id, 1u64); // same id as before
 
-    assert_eq!(mapper.contains_id(1u64), true);
-    assert_eq!(mapper.contains_id(2u64), false);
+    assert!(mapper.contains_id(1u64));
+    assert!(!mapper.contains_id(2u64));
 
     let (token_identifier_from_storage, nonce_from_storage) = mapper.get_object(1u64).unwrap();
 
@@ -62,7 +62,7 @@ fn test_mapper() {
 
     assert_eq!(same_id, 2u64);
 
-    assert_eq!(mapper.contains_id(2u64), true);
+    assert!(mapper.contains_id(2u64));
 
     // remove by id
 

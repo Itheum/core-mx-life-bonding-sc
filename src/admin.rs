@@ -9,7 +9,7 @@ use crate::{
         ERR_COMPENSATION_NOT_FOUND, ERR_INVALID_PENALTY_VALUE, ERR_INVALID_TIMESTAMP,
         ERR_INVALID_TOKEN_IDENTIFIER, ERR_NOT_IN_STORAGE, ERR_NOT_PRIVILEGED,
     },
-    events, only_privileged,
+    events, only_privileged, proxy_contracts,
     storage::{self, PenaltyType},
 };
 
@@ -131,6 +131,12 @@ pub trait AdminModule:
 
         let mut bond_cache = BondCache::new(self, bond_id);
         let mut compensation_cache = CompensationCache::new(self, compensation_id);
+
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(proxy_contracts::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .generate_rewards()
+            .sync_call();
 
         let penalty = match penalty {
             PenaltyType::Minimum => self.minimum_penalty().get(),
@@ -295,5 +301,19 @@ pub trait AdminModule:
         require!(penalty <= 10_000 && penalty > 0, ERR_INVALID_PENALTY_VALUE);
         self.withdraw_penalty_event(penalty);
         self.withdraw_penalty().set(penalty);
+    }
+
+    #[endpoint(setLivelinessStakeAddress)]
+    fn set_liveliness_stake_address(&self, address: ManagedAddress) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+        self.set_liveliness_stake_address_event(&address);
+        self.liveliness_stake_address().set(address);
+    }
+
+    #[endpoint(setTopUpAdministrator)]
+    fn set_top_up_administrator(&self, address: ManagedAddress) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+        self.set_top_up_administrator_event(&address);
+        self.top_up_administrator().set(address);
     }
 }

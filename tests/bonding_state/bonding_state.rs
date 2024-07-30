@@ -12,6 +12,7 @@ use multiversx_sc::{
 };
 use multiversx_sc_scenario::{
     api::StaticApi,
+    imports::MxscPath,
     managed_address, managed_biguint, managed_token_id,
     num_bigint::BigUint,
     scenario_model::{
@@ -23,6 +24,13 @@ use multiversx_sc_scenario::{
 
 pub const BONDING_CONTRACT_PATH: &str = "mxsc:output/core-mx-life-bonding-sc.msxc.json";
 pub const BONDING_CONTRACT_ADDRESS_EXPR: &str = "sc:core-mx-life-bonding-sc";
+
+pub const LIVELINESS_STAKE_OWNER_ADDRESS_EXPR: &str = "address:core-mx-life-bonding-sc";
+
+pub const LIVELINESS_STAKE_PATH: &str =
+    "mxsc:test_external_contracts/core-mx-life-bonding-sc.mxsc.json";
+
+pub const LIVELINESS_STAKE_CONTRACT_ADDRESS_EXPR: &str = "sc:core-mx-liveliness-stake";
 
 pub const MINTER_CONTRACT_ADDRESS_EXPR: &str = "sc:minter";
 
@@ -52,6 +60,12 @@ pub fn world() -> ScenarioWorld {
         BONDING_CONTRACT_PATH,
         core_mx_life_bonding_sc::ContractBuilder,
     );
+
+    blockchain.register_contract(
+        LIVELINESS_STAKE_PATH,
+        core_mx_liveliness_stake::ContractBuilder,
+    );
+
     blockchain
 }
 
@@ -82,6 +96,15 @@ impl ContractState {
                     OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
                     1,
                     BONDING_CONTRACT_ADDRESS_EXPR,
+                )
+                .put_account(
+                    LIVELINESS_STAKE_OWNER_ADDRESS_EXPR,
+                    Account::new().nonce(1).balance("1_000"),
+                )
+                .new_address(
+                    LIVELINESS_STAKE_OWNER_ADDRESS_EXPR,
+                    1,
+                    LIVELINESS_STAKE_CONTRACT_ADDRESS_EXPR,
                 )
                 .put_account(
                     ADMIN_BONDING_CONTRACT_ADDRESS_EXPR,
@@ -147,6 +170,7 @@ impl ContractState {
     pub fn default_deploy_and_set(&mut self, lock_period: u64, bond_amount: u64) -> &mut Self {
         let admin = self.admin.clone();
         self.deploy()
+            .deploy_liveliness_stake()
             .set_administrator(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, admin.clone(), None)
             .set_accepted_caller(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, admin.clone(), None)
             .set_bond_token(
@@ -159,8 +183,26 @@ impl ContractState {
                 lock_period,
                 bond_amount,
                 None,
-            );
+            )
+            .set_liveliness_stake_contract(
+                OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
+                AddressValue::from(LIVELINESS_STAKE_CONTRACT_ADDRESS_EXPR).to_address(),
+                None,
+            )
+            .set_top_up_administrator(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, admin.clone(), None);
 
+        self
+    }
+
+    pub fn deploy_liveliness_stake(&mut self) -> &mut Self {
+        let liveliness_stake_contract_code = self.world.code_expression(LIVELINESS_STAKE_PATH);
+
+        self.world.sc_deploy(
+            ScDeployStep::new()
+                .from(LIVELINESS_STAKE_OWNER_ADDRESS_EXPR)
+                .code(liveliness_stake_contract_code)
+                .call(self.contract.init()),
+        );
         self
     }
 
@@ -189,6 +231,44 @@ impl ContractState {
                 .call(
                     self.contract
                         .set_administrator(managed_address!(&administrator)),
+                )
+                .expect(tx_expect),
+        );
+        self
+    }
+
+    pub fn set_top_up_administrator(
+        &mut self,
+        caller: &str,
+        top_up_address: Address,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
+        self.world.sc_call(
+            ScCallStep::new()
+                .from(caller)
+                .call(
+                    self.contract
+                        .set_top_up_administrator(managed_address!(&top_up_address)),
+                )
+                .expect(tx_expect),
+        );
+        self
+    }
+
+    pub fn set_liveliness_stake_contract(
+        &mut self,
+        caller: &str,
+        liveliness_stake: Address,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
+        self.world.sc_call(
+            ScCallStep::new()
+                .from(caller)
+                .call(
+                    self.contract
+                        .set_liveliness_stake_address(managed_address!(&liveliness_stake)),
                 )
                 .expect(tx_expect),
         );
@@ -597,6 +677,46 @@ impl ContractState {
                 .call(
                     self.contract
                         .claim_refund(managed_token_id!(token_identifier), nonce),
+                )
+                .expect(expect.unwrap_or(TxExpect::ok())),
+        );
+        self
+    }
+
+    pub fn set_vault_nonce(
+        &mut self,
+        caller: &str,
+        token_identifier: &[u8],
+        nonce: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        self.world.sc_call(
+            ScCallStep::new()
+                .from(caller)
+                .call(
+                    self.contract
+                        .set_vault_nonce(managed_token_id!(token_identifier), nonce),
+                )
+                .expect(expect.unwrap_or(TxExpect::ok())),
+        );
+        self
+    }
+
+    pub fn top_up_vault(
+        &mut self,
+        caller: &str,
+        payment: (&str, u64, u64),
+        token_identifier: &[u8],
+        nonce: u64,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        self.world.sc_call(
+            ScCallStep::new()
+                .from(caller)
+                .esdt_transfer(payment.0, payment.1, payment.2)
+                .call(
+                    self.contract
+                        .top_up_vault(managed_token_id!(token_identifier), nonce),
                 )
                 .expect(expect.unwrap_or(TxExpect::ok())),
         );
