@@ -3,6 +3,7 @@ mod endpoints;
 
 use core_mx_life_bonding_sc::{
     config::{ConfigModule, State},
+    storage::StorageModule,
     LifeBondingContract,
 };
 use multiversx_sc_scenario::{
@@ -41,15 +42,23 @@ fn bond_contract_ready_test() {
 
     assert!(!bond_contract.contract_is_ready());
 
-    bond_contract.lock_periods().insert(1);
-
-    assert!(bond_contract.contract_is_ready());
-
-    bond_contract.lock_periods().remove(&1);
+    bond_contract.lock_periods().insert(1u64);
 
     assert!(!bond_contract.contract_is_ready());
 
-    bond_contract.lock_periods().insert(1);
+    bond_contract
+        .liveliness_stake_address()
+        .set(managed_address!(
+            &AddressValue::from("address:stake").to_address()
+        ));
+
+    assert!(!bond_contract.contract_is_ready());
+
+    bond_contract
+        .top_up_administrator()
+        .set(managed_address!(
+            &AddressValue::from("address:topup").to_address()
+        ));
 
     assert!(bond_contract.contract_is_ready());
 

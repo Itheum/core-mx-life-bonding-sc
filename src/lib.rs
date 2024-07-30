@@ -172,7 +172,7 @@ pub trait LifeBondingContract:
         self.tx()
             .to(self.liveliness_stake_address().get())
             .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
-            .generate_rewards()
+            .claim_rewards(OptionalValue::Some(caller.clone()))
             .sync_call();
 
         let current_timestamp = self.blockchain().get_block_timestamp();
@@ -416,13 +416,65 @@ pub trait LifeBondingContract:
         self.tx()
             .to(self.liveliness_stake_address().get())
             .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
-            .generate_rewards()
+            .claim_rewards(OptionalValue::Some(caller.clone()))
             .sync_call();
 
         require!(
             self.address_vault_nonce(&caller, &token_identifier).get() == nonce,
             ERR_VAULT_NONCE_NOT_SET
         );
+
+        let bond_id = self
+            .bonds_ids()
+            .get_id_non_zero((token_identifier.clone(), nonce));
+
+        let mut bond_cache = BondCache::new(self, bond_id);
+
+        require!(bond_cache.address == caller, ERR_BOND_NOT_FOUND);
+
+        let payment = self.call_value().single_esdt();
+
+        require!(
+            payment.token_identifier == self.bond_payment_token().get(),
+            ERR_INVALID_TOKEN_IDENTIFIER
+        );
+
+        let current_timestamp = self.blockchain().get_block_timestamp();
+
+        bond_cache.unbond_timestamp = current_timestamp + bond_cache.lock_period;
+        bond_cache.bond_timestamp = current_timestamp;
+        bond_cache.bond_amount += &payment.amount;
+        bond_cache.remaining_amount += &payment.amount;
+
+        self.total_bond_amount()
+            .update(|value| *value += &payment.amount);
+    }
+
+    #[payable("*")]
+    #[endpoint(topUpAddressVault)]
+    fn top_up_address_vault(
+        &self,
+        address: ManagedAddress,
+        token_identifier: TokenIdentifier,
+        nonce: u64,
+    ) {
+        let caller = self.blockchain().get_caller();
+
+        require!(
+            self.address_vault_nonce(&address, &token_identifier).get() == nonce,
+            ERR_VAULT_NONCE_NOT_SET
+        );
+
+        require!(
+            caller == self.top_up_administrator().get(),
+            ERR_ENDPOINT_CALLABLE_ONLY_BY_ACCEPTED_CALLERS
+        );
+
+        self.tx()
+            .to(self.liveliness_stake_address().get())
+            .typed(core_mx_liveliness_stake::liveliness_stake_proxy::CoreMxLivelinessStakeProxy)
+            .claim_rewards(OptionalValue::Some(caller.clone()))
+            .sync_call();
 
         let bond_id = self
             .bonds_ids()

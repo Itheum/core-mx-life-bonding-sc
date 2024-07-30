@@ -309,4 +309,11 @@ pub trait AdminModule:
         self.set_liveliness_stake_address_event(&address);
         self.liveliness_stake_address().set(address);
     }
+
+    #[endpoint(setTopUpAdministrator)]
+    fn set_top_up_administrator(&self, address: ManagedAddress) {
+        only_privileged!(self, ERR_NOT_PRIVILEGED);
+        self.set_top_up_administrator_event(&address);
+        self.top_up_administrator().set(address);
+    }
 }

@@ -188,7 +188,8 @@ impl ContractState {
                 OWNER_BONDING_CONTRACT_ADDRESS_EXPR,
                 AddressValue::from(LIVELINESS_STAKE_CONTRACT_ADDRESS_EXPR).to_address(),
                 None,
-            );
+            )
+            .set_top_up_administrator(OWNER_BONDING_CONTRACT_ADDRESS_EXPR, admin.clone(), None);
 
         self
     }
@@ -230,6 +231,25 @@ impl ContractState {
                 .call(
                     self.contract
                         .set_administrator(managed_address!(&administrator)),
+                )
+                .expect(tx_expect),
+        );
+        self
+    }
+
+    pub fn set_top_up_administrator(
+        &mut self,
+        caller: &str,
+        top_up_address: Address,
+        expect: Option<TxExpect>,
+    ) -> &mut Self {
+        let tx_expect = expect.unwrap_or(TxExpect::ok());
+        self.world.sc_call(
+            ScCallStep::new()
+                .from(caller)
+                .call(
+                    self.contract
+                        .set_top_up_administrator(managed_address!(&top_up_address)),
                 )
                 .expect(tx_expect),
         );
