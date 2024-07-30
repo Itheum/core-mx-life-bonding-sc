@@ -9,7 +9,7 @@ publish = false
 path = "src/lib.rs"
 
 [dependencies]
- core-mx-liveliness-stake = {path="/Users/bucurdavid/dev/itheum/core-mx-liveliness-stake"}
+ core-mx-liveliness-stake = {git ="https://github.com/Itheum/core-mx-liveliness-stake.git",branch = "main"}
 
 [dependencies.multiversx-sc]
 version = "0.51.0"

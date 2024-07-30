@@ -176,12 +176,25 @@ pub trait ViewsModule:
     }
 
     #[view(getAddressBondsTotalValue)]
-    fn get_address_bonds_total_value(&self, address: ManagedAddress<Self::Api>) -> BigUint {
-        self.address_bonds(&address)
+    fn get_address_bonds_total_value(&self, address: &ManagedAddress<Self::Api>) -> BigUint {
+        self.address_bonds(address)
             .into_iter()
             .fold(BigUint::zero(), |acc, bond_id| {
                 acc + self.remaining_amount(bond_id).get()
             })
+    }
+
+    #[view(getAddressBondsInfo)]
+    fn get_address_bonds_info(&self, address: ManagedAddress) -> (BigUint, BigUint, BigUint) {
+        let address_bonds_value = self.get_address_bonds_total_value(&address);
+        let address_bonds_avg_score = self.get_address_bonds_avg_score(address);
+        let total_bond_amount = self.total_bond_amount().get();
+
+        (
+            total_bond_amount,
+            address_bonds_value,
+            address_bonds_avg_score,
+        )
     }
 
     #[view(getAllBonds)]
