@@ -22,6 +22,7 @@ pub mod config;
 pub mod contexts;
 pub mod errors;
 pub mod events;
+pub mod life_bonding_sc_proxy;
 pub mod storage;
 pub mod views;
 #[multiversx_sc::contract]
@@ -50,6 +51,15 @@ pub trait LifeBondingContract:
     fn upgrade(&self) {
         self.contract_state().set(State::Inactive);
         self.contract_state_event(State::Inactive);
+
+        // NEEDS TO BE USED AS STORAGE WAS NOT IMPLEMENTED
+        // DEVNET
+        self.total_bond_amount()
+            .set(BigUint::from(1313800000000000000000u128));
+
+        // MAINNET
+        // self.total_bond_amount()
+        //     .set(BigUint::from(10494000000000000000000u128));
     }
 
     #[payable("*")]
@@ -100,6 +110,9 @@ pub trait LifeBondingContract:
 
         let current_timestamp = self.blockchain().get_block_timestamp();
         let unbond_timestamp = current_timestamp + lock_period_seconds;
+
+        self.total_bond_amount()
+            .update(|value| *value += bond_amount);
 
         self.bond_address(bond_id).set(original_caller.clone());
         self.bond_token_identifier(bond_id)

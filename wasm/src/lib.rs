@@ -5,13 +5,12 @@
 ////////////////////////////////////////////////////
 
 // Init:                                 1
-// Endpoints:                           48
+// Upgrade:                              1
+// Endpoints:                           50
 // Async Callback (empty):               1
-// Total number of exported functions:  50
+// Total number of exported functions:  53
 
 #![no_std]
-#![allow(internal_features)]
-#![feature(lang_items)]
 
 multiversx_sc_wasm_adapter::allocator!();
 multiversx_sc_wasm_adapter::panic_handler!();
@@ -27,6 +26,7 @@ multiversx_sc_wasm_adapter::endpoints! {
         proof => add_proof
         claimRefund => claim_refund
         getCompensationBlacklist => compensation_blacklist
+        getTotalBondAmount => total_bond_amount
         getBond => get_bond
         getCompensation => get_compensation
         getCompensations => get_compensations
@@ -36,6 +36,8 @@ multiversx_sc_wasm_adapter::endpoints! {
         getBondsByTokenIdentifierNonce => get_bonds_by_token_identifier_nonce
         getBonds => get_bonds
         getAddressBonds => get_address_bonds
+        getAddressBondsAvgScore => get_address_bonds_avg_score
+        getAddressBondsTotalValue => get_address_bonds_total_value
         getAllBonds => get_all_bonds
         getPagedBonds => get_paged_bonds
         getBondsLen => get_bonds_len

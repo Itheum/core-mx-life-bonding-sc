@@ -1,5 +1,5 @@
 use core_mx_life_bonding_sc::{
-    storage::{Compensation, PenaltyType},
+    storage::{Bond, Compensation, PenaltyType},
     views::ProxyTrait,
 };
 use multiversx_sc::{
@@ -7,6 +7,7 @@ use multiversx_sc::{
     types::{BigUint, ManagedVec},
 };
 use multiversx_sc_scenario::{
+    api::StaticApi,
     managed_token_id,
     scenario_model::{
         AddressValue, CheckAccount, CheckStateStep, ScQueryStep, SetStateStep, TransferStep,
@@ -92,7 +93,7 @@ fn withdraw_with_withdraw_penalty_test() {
             CheckAccount::new().esdt_balance(ITHEUM_TOKEN_IDENTIFIER_EXPR, "80"),
         ));
 
-    let bonds = ManagedVec::new();
+    let bonds: ManagedVec<StaticApi, Bond<StaticApi>> = ManagedVec::new();
 
     state.world.sc_query(
         ScQueryStep::new()
@@ -274,8 +275,8 @@ fn withdraw_with_no_penalty_test() {
 
     state.withdraw(FIRST_USER_ADDRESS_EXPR, DATA_NFT_IDENTIFIER, 1u64, None);
 
-    let no_bond = ManagedVec::new();
-    let no_compensation = ManagedVec::new();
+    let no_bond: ManagedVec<StaticApi, Bond<StaticApi>> = ManagedVec::new();
+    let no_compensation: ManagedVec<StaticApi, Compensation<StaticApi>> = ManagedVec::new();
 
     state.world.sc_query(
         ScQueryStep::new()
