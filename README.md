@@ -1,4 +1,9 @@
-# Itheum Core MultiversX - Itheum Life Bonding Contract
+# Itheum Core MultiversX - Itheum Life Bonding Contract (V1 and V2 ONLY)
+
+## NOTE: SINCE V3, REPO HAS BEEN MOVED TO NEW LOCATION
+Remove has been moved to https://github.com/Itheum/core-mx-bonding-staking where the development continues.
+
+---
 
 ## Abstract
 
